@@ -62,21 +62,21 @@ public class ControllerClient implements Closeable {
    * where url is either a set of discoveryUrls or a D2 service name.
    */
 
-  public static Map<String, ControllerClient> getClusterToClientMap() { return Collections.unmodifiableMap(clusterToClientMap); }
+  protected static Map<String, ControllerClient> getClusterToClientMap() { return Collections.unmodifiableMap(clusterToClientMap); }
 
-  public static void addClusterToClientMapEntry(String clusterName, String url, ControllerClient value) {
+  protected static void addClusterToClientMapEntry(String clusterName, String url, ControllerClient value) {
     clusterToClientMap.computeIfAbsent(clusterName + url, k -> value);
   }
 
-  public static void deleteClusterToClientMapEntry(String clusterName, String url) {
+  protected static void deleteClusterToClientMapEntry(String clusterName, String url) {
     clusterToClientMap.remove(clusterName + url);
   }
 
-  public static ControllerClient getClusterToClientMapEntry(String clusterName, String url) {
+  protected static ControllerClient getClusterToClientMapEntry(String clusterName, String url) {
     return getClusterToClientMap().get(clusterName + url);
   }
 
-  public static boolean clusterToClientMapContains(String clusterName, String url) {
+  protected static boolean clusterToClientMapContains(String clusterName, String url) {
     return getClusterToClientMap().containsKey(clusterName + url);
   }
 

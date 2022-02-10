@@ -12,6 +12,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Properties;
 import java.util.UUID;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -165,6 +167,29 @@ public class SslUtils {
         new Class[]{propertiesClass},
         new Object[]{sslProperties});
     return sslFactory;
+  }
+
+  /**
+   * A helper function that return an instance of {@link SSLFactory} from an {@link SSLEngineComponentFactory}.
+   * @param sslEngineComponentFactory
+   */
+  public static SSLFactory getSSLFactory(SSLEngineComponentFactory sslEngineComponentFactory) {
+    return new SSLFactory() {
+      @Override
+      public SSLContext getSSLContext() {
+        return sslEngineComponentFactory.getSSLContext();
+      }
+
+      @Override
+      public SSLParameters getSSLParameters() {
+        return sslEngineComponentFactory.getSSLParameters();
+      }
+
+      @Override
+      public boolean isSslEnabled() {
+        return sslEngineComponentFactory.isSslEnabled();
+      }
+    };
   }
 
   /**

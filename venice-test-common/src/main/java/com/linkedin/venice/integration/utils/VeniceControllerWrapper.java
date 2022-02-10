@@ -2,6 +2,7 @@ package com.linkedin.venice.integration.utils;
 
 import com.linkedin.d2.balancer.D2Client;
 import com.linkedin.d2.server.factory.D2Server;
+import com.linkedin.venice.ConfigConstants;
 import com.linkedin.venice.authorization.AuthorizerService;
 import com.linkedin.venice.client.store.ClientConfig;
 import com.linkedin.venice.controller.Admin;
@@ -42,7 +43,7 @@ import static com.linkedin.venice.integration.utils.D2TestUtils.*;
 public class VeniceControllerWrapper extends ProcessWrapper {
   public static final Logger logger = LogManager.getLogger(VeniceControllerWrapper.class);
 
-  public static final String SERVICE_NAME = "VeniceController";
+  public static final String SERVICE_NAME = ConfigConstants.DEFAULT_VENICE_LOCAL_CONTROLLER_D2_SERVICE;
   public static final double DEFAULT_STORAGE_ENGINE_OVERHEAD_RATIO = 0.85d;
   public static final String DEFAULT_PARENT_DATA_CENTER_REGION_NAME = "dc-parent-0";
 

@@ -187,6 +187,47 @@ public class RetryUtils {
     }
 
     /**
+     * Execute a {@link Supplier} with fixed delay for infinite attempts till a successful outcome is achieved. This
+     * function logs the throwable that failed intermediate execution attempts.
+     *
+     * @param supplier Execution unit which returns something ({@link T})
+     * @param delay Fixed delay between retry attempts.
+     * @param retryFailureTypes Types of failures upon which retry attempt is made. If a failure with type not specified
+     *                          in this list is thrown, it gets thrown to the caller.
+     */
+    public static <T> T executeInfinitely(
+        VeniceCheckedSupplier<T> supplier,
+        Duration delay,
+        List<Class<? extends Throwable>> retryFailureTypes
+    ) {
+        return executeInfinitely(supplier, delay, retryFailureTypes, RetryUtils::logAttemptWithFailure);
+    }
+
+    /**
+     * Execute a {@link Supplier} with fixed delay for infinite attempts till a successful outcome is achieved.
+     *
+     * @param supplier Execution unit which returns something ({@link T})
+     * @param delay Fixed delay between retry attempts.
+     * @param retryFailureTypes Types of failures upon which retry attempt is made. If a failure with type not specified
+     *                          in this list is thrown, it gets thrown to the caller.
+     * @param intermediateFailureHandler A handler for intermediate failure(s).
+     */
+    public static <T> T executeInfinitely(
+        VeniceCheckedSupplier<T> supplier,
+        Duration delay,
+        List<Class<? extends Throwable>> retryFailureTypes,
+        IntermediateFailureHandler intermediateFailureHandler
+    ) {
+        RetryPolicy<Object> retryPolicy = new RetryPolicy<>()
+            .handle(retryFailureTypes)
+            .withDelay(delay)
+            .withMaxAttempts(-1);
+
+        retryPolicy.onFailedAttempt(intermediateFailureHandler::handle);
+        return Failsafe.with(retryPolicy).get(supplier::get);
+    }
+
+    /**
      * Execute a {@link Supplier} with exponential backoff. If all attempts are made or the max duration has reached
      * and still no success, the last thrown exception will be thrown. This function logs the throwable that failed
      * intermediate execution attempts.

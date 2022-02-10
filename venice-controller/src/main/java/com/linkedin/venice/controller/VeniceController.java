@@ -6,10 +6,13 @@ import com.linkedin.venice.SSLConfig;
 import com.linkedin.venice.acl.DynamicAccessController;
 import com.linkedin.venice.authorization.AuthorizerService;
 import com.linkedin.venice.client.store.ClientConfig;
+import com.linkedin.venice.controller.init.LeaderControllerSystemSchemaInitializer;
 import com.linkedin.venice.controller.kafka.TopicCleanupService;
 import com.linkedin.venice.controller.kafka.TopicCleanupServiceForParentController;
 import com.linkedin.venice.controller.server.AdminSparkServer;
+import com.linkedin.venice.controllerapi.UpdateStoreQueryParams;
 import com.linkedin.venice.exceptions.VeniceException;
+import com.linkedin.venice.serialization.avro.AvroProtocolDefinition;
 import com.linkedin.venice.service.ICProvider;
 import com.linkedin.venice.stats.KafkaClientStats;
 import com.linkedin.venice.stats.TehutiUtils;
@@ -19,6 +22,7 @@ import io.tehuti.metrics.MetricsRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,6 +87,7 @@ public class VeniceController {
 
     createServices();
     KafkaClientStats.registerKafkaClientStats(metricsRepository, "KafkaClientStats", Optional.empty());
+    registerSystemSchemas();
   }
 
   private void createServices() {
@@ -151,6 +156,46 @@ public class VeniceController {
     logger.info("Controller is started.");
   }
 
+  private void registerSystemSchemas() {
+    final VeniceHelixAdmin admin;
+    if (multiClusterConfigs.isParent()) {
+      admin = ((VeniceParentHelixAdmin) controllerService.getVeniceHelixAdmin()).getVeniceHelixAdmin();
+    } else {
+      admin = (VeniceHelixAdmin) controllerService.getVeniceHelixAdmin();
+    }
+
+    if (admin.isLeaderControllerFor(multiClusterConfigs.getSystemSchemaClusterName())) {
+      new LeaderControllerSystemSchemaInitializer(
+          AvroProtocolDefinition.KAFKA_MESSAGE_ENVELOPE, multiClusterConfigs, admin).execute();
+      new LeaderControllerSystemSchemaInitializer(
+          AvroProtocolDefinition.PARTITION_STATE, multiClusterConfigs, admin).execute();
+      new LeaderControllerSystemSchemaInitializer(
+          AvroProtocolDefinition.STORE_VERSION_STATE, multiClusterConfigs, admin).execute();
+
+      if (multiClusterConfigs.isZkSharedMetaSystemSchemaStoreAutoCreationEnabled()) {
+        // Add routine to create zk shared metadata system store
+        UpdateStoreQueryParams
+            metadataSystemStoreUpdate = new UpdateStoreQueryParams().setHybridRewindSeconds(TimeUnit.DAYS.toSeconds(1)) // 1 day rewind
+            .setHybridOffsetLagThreshold(1).setHybridTimeLagThreshold(TimeUnit.MINUTES.toSeconds(1)) // 1 mins
+            .setLeaderFollowerModel(true).setWriteComputationEnabled(true)
+            .setPartitionCount(1);
+        new LeaderControllerSystemSchemaInitializer(AvroProtocolDefinition.METADATA_SYSTEM_SCHEMA_STORE,
+            multiClusterConfigs, admin, Optional.of(AvroProtocolDefinition.METADATA_SYSTEM_SCHEMA_STORE_KEY.getCurrentProtocolVersionSchema()),
+            Optional.of(metadataSystemStoreUpdate), true).execute();
+      }
+      if (multiClusterConfigs.isZkSharedDaVinciPushStatusSystemSchemaStoreAutoCreationEnabled()) {
+        // Add routine to create zk shared da vinci push status system store
+        UpdateStoreQueryParams daVinciPushStatusSystemStoreUpdate = new UpdateStoreQueryParams().setHybridRewindSeconds(TimeUnit.DAYS.toSeconds(1)) // 1 day rewind
+            .setHybridOffsetLagThreshold(1).setHybridTimeLagThreshold(TimeUnit.MINUTES.toSeconds(1)) // 1 mins
+            .setLeaderFollowerModel(true).setWriteComputationEnabled(true).setPartitionCount(1);
+        new LeaderControllerSystemSchemaInitializer(AvroProtocolDefinition.PUSH_STATUS_SYSTEM_SCHEMA_STORE,
+            multiClusterConfigs, admin, Optional.of(AvroProtocolDefinition.PUSH_STATUS_SYSTEM_SCHEMA_STORE_KEY.getCurrentProtocolVersionSchema()),
+            Optional.of(daVinciPushStatusSystemStoreUpdate), true).execute();
+      } else {
+        // Use ControllerClientBackedSystemSchemaInitializer
+      }
+    }
+  }
 
   public void stop(){
     // stop d2 service first

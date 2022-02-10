@@ -194,6 +194,11 @@ public enum AvroProtocolDefinition {
   final boolean protocolVersionStoredInHeader;
 
   /**
+   * The system store name for the system store for this protocol.
+   */
+  final String systemStoreName;
+
+  /**
    * Constructor for protocols where the Avro record is prepended by a protocol
    * definition header, which includes a magic byte and protocol version.
    */
@@ -203,6 +208,7 @@ public enum AvroProtocolDefinition {
     this.protocolVersionStoredInHeader = true;
     this.className = specificRecordClass.getSimpleName();
     this.schema = SpecificData.get().getSchema(specificRecordClass);
+    this.systemStoreName = generateSystemStoreName();
   }
 
   /**
@@ -220,6 +226,7 @@ public enum AvroProtocolDefinition {
     this.protocolVersionStoredInHeader = false;
     this.className = specificRecordClass.getSimpleName();
     this.schema = SpecificData.get().getSchema(specificRecordClass);
+    this.systemStoreName = generateSystemStoreName();
   }
 
   /**
@@ -232,6 +239,7 @@ public enum AvroProtocolDefinition {
     this.protocolVersionStoredInHeader = false;
     this.className = specificRecordClass.getSimpleName();
     this.schema = SpecificData.get().getSchema(specificRecordClass);
+    this.systemStoreName = generateSystemStoreName();
   }
 
   /**
@@ -244,6 +252,7 @@ public enum AvroProtocolDefinition {
     this.protocolVersionStoredInHeader = false;
     this.className = name;
     this.schema = schema;
+    this.systemStoreName = generateSystemStoreName();
   }
 
   public <T extends SpecificRecord> InternalAvroSpecificSerializer<T> getSerializer() {
@@ -270,7 +279,11 @@ public enum AvroProtocolDefinition {
     return className;
   }
 
-  public String getSystemStoreName() {
+  private String generateSystemStoreName() {
     return String.format(Store.SYSTEM_STORE_FORMAT, name());
+  }
+
+  public String getSystemStoreName() {
+    return systemStoreName;
   }
 }

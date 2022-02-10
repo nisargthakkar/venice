@@ -4,9 +4,15 @@ import com.linkedin.venice.utils.Time;
 
 
 public class ConfigConstants {
-  /**
-   * Start of controller config default value
-   */
+  // -------------------------- Common config default values --------------------------
+
+  // Default D2 service name for local controller
+  public static final String DEFAULT_VENICE_LOCAL_CONTROLLER_D2_SERVICE = "VeniceController";
+
+  // Default D2 service name for parent controller
+  public static final String DEFAULT_VENICE_PARENT_CONTROLLER_D2_SERVICE = "VeniceParentController";
+
+  // ------------------------ Controller config default values ------------------------
 
   /**
    * Default value of sleep interval for polling topic deletion status from ZK.
@@ -16,11 +22,7 @@ public class ConfigConstants {
   public static final long DEFAULT_KAFKA_ADMIN_GET_TOPIC_CONFIG_RETRY_IN_SECONDS = 600;
 
 
-  /**
-   * End of controller config default value
-   */
-
-  // Start of server config default value
+  // -------------------------- Server config default values --------------------------
 
   /**
    * Default Kafka SSL context provider class name.
@@ -30,5 +32,4 @@ public class ConfigConstants {
    * The default BoringSslContextProvider mainly relies on conscrypt.
    */
   public static final String DEFAULT_KAFKA_SSL_CONTEXT_PROVIDER_CLASS_NAME = "org.apache.kafka.common.security.ssl.BoringSslContextProvider";
-  // End of server config default value
 }

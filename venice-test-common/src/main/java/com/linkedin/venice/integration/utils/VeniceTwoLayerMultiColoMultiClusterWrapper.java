@@ -1,5 +1,8 @@
 package com.linkedin.venice.integration.utils;
 
+import com.linkedin.venice.ConfigConstants;
+import com.linkedin.venice.ConfigKeys;
+import com.linkedin.venice.VeniceConstants;
 import com.linkedin.venice.exceptions.VeniceException;
 import com.linkedin.venice.samza.VeniceSystemFactory;
 import com.linkedin.venice.utils.TestUtils;
@@ -157,7 +160,7 @@ public class VeniceTwoLayerMultiColoMultiClusterWrapper extends ProcessWrapper {
           multiClusters.stream().map(cluster -> cluster.getRandomController()).toArray(VeniceControllerWrapper[]::new);
 
       // Setup D2 for parent controller
-      D2TestUtils.setupD2Config(parentKafka.getZkAddress(), false, D2TestUtils.CONTROLLER_CLUSTER_NAME, VeniceSystemFactory.VENICE_PARENT_D2_SERVICE, false);
+      D2TestUtils.setupD2Config(parentKafka.getZkAddress(), false, D2TestUtils.CONTROLLER_CLUSTER_NAME, ConfigConstants.DEFAULT_VENICE_PARENT_CONTROLLER_D2_SERVICE, false);
       // Create parentControllers for multi-cluster
       for (int i = 0; i < numberOfParentControllers; i++) {
         // random controller from each multicluster, in reality this should include all controllers, not just one

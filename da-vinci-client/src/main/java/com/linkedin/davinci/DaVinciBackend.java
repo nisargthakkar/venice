@@ -41,6 +41,7 @@ import com.linkedin.venice.pushmonitor.ExecutionStatus;
 import com.linkedin.venice.pushstatushelper.PushStatusStoreWriter;
 import com.linkedin.venice.serialization.avro.AvroProtocolDefinition;
 import com.linkedin.venice.serialization.avro.InternalAvroSpecificSerializer;
+import com.linkedin.venice.serialization.avro.SchemaPresenceChecker;
 import com.linkedin.venice.service.AbstractVeniceService;
 import com.linkedin.venice.service.ICProvider;
 import com.linkedin.venice.stats.TehutiUtils;
@@ -118,15 +119,11 @@ public class DaVinciBackend implements Closeable {
 
     VeniceProperties backendProps = backendConfig.getClusterProperties();
 
-    SchemaReader partitionStateSchemaReader = ClientFactory.getSchemaReader(
-        ClientConfig.cloneConfig(clientConfig)
-            .setStoreName(AvroProtocolDefinition.PARTITION_STATE.getSystemStoreName()));
+    SchemaReader partitionStateSchemaReader = verifyLocalSchemasAndGetSchemaReader(AvroProtocolDefinition.PARTITION_STATE, clientConfig);
     InternalAvroSpecificSerializer<PartitionState> partitionStateSerializer = AvroProtocolDefinition.PARTITION_STATE.getSerializer();
     partitionStateSerializer.setSchemaReader(partitionStateSchemaReader);
 
-    SchemaReader versionStateSchemaReader = ClientFactory.getSchemaReader(
-        ClientConfig.cloneConfig(clientConfig)
-            .setStoreName(AvroProtocolDefinition.STORE_VERSION_STATE.getSystemStoreName()));
+    SchemaReader versionStateSchemaReader = verifyLocalSchemasAndGetSchemaReader(AvroProtocolDefinition.STORE_VERSION_STATE, clientConfig);
     InternalAvroSpecificSerializer<StoreVersionState> storeVersionStateSerializer = AvroProtocolDefinition.STORE_VERSION_STATE.getSerializer();
     storeVersionStateSerializer.setSchemaReader(versionStateSchemaReader);
 
@@ -144,9 +141,7 @@ public class DaVinciBackend implements Closeable {
     int derivedSchemaID = backendProps.getInt(PUSH_STATUS_STORE_DERIVED_SCHEMA_ID, 1);
     pushStatusStoreWriter = new PushStatusStoreWriter(writerFactory, instanceName, derivedSchemaID);
 
-    SchemaReader kafkaMessageEnvelopeSchemaReader = ClientFactory.getSchemaReader(
-        ClientConfig.cloneConfig(clientConfig)
-            .setStoreName(AvroProtocolDefinition.KAFKA_MESSAGE_ENVELOPE.getSystemStoreName()));
+    SchemaReader kafkaMessageEnvelopeSchemaReader = verifyLocalSchemasAndGetSchemaReader(AvroProtocolDefinition.KAFKA_MESSAGE_ENVELOPE, clientConfig);
 
     storageMetadataService = backendConfig.getIngestionMode().equals(IngestionMode.ISOLATED)
         ? new MainIngestionStorageMetadataService(backendConfig.getIngestionServicePort(), partitionStateSerializer, new MetadataUpdateStats(metricsRepository), configLoader)
@@ -156,6 +151,7 @@ public class DaVinciBackend implements Closeable {
     compressorFactory = new StorageEngineBackedCompressorFactory(storageMetadataService);
 
     cacheBackend = cacheConfig.map(objectCacheConfig -> new ObjectCacheBackend(clientConfig, objectCacheConfig, schemaRepository));
+
     ingestionService = new KafkaStoreIngestionService(
         storageService.getStorageEngineRepository(),
         configLoader,
@@ -472,6 +468,13 @@ public class DaVinciBackend implements Closeable {
 
   private Optional<Version> getVeniceCurrentVersion(Store store) {
     return store.getVersion(store.getCurrentVersion());
+  }
+
+  private SchemaReader verifyLocalSchemasAndGetSchemaReader(AvroProtocolDefinition protocolDefinition, ClientConfig clientConfig) {
+    SchemaReader schemaReader = ClientFactory.getSchemaReader(ClientConfig.cloneConfig(clientConfig)
+            .setStoreName(protocolDefinition.getSystemStoreName()));
+    new SchemaPresenceChecker(schemaReader, protocolDefinition).verifySchemaVersionPresentOrExit();
+    return schemaReader;
   }
 
   private final StoreDataChangedListener storeChangeListener = new StoreDataChangedListener() {

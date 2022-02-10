@@ -1,9 +1,7 @@
 package com.linkedin.venice.integration.utils;
 
 import com.linkedin.davinci.config.VeniceConfigLoader;
-import com.linkedin.ddsstorage.linetty4.ssl.SslEngineComponentFactoryImpl;
 import com.linkedin.security.ssl.access.control.SSLEngineComponentFactory;
-import com.linkedin.security.ssl.access.control.SSLEngineComponentFactoryImpl;
 import com.linkedin.venice.client.store.ClientConfig;
 import com.linkedin.venice.exceptions.VeniceException;
 import com.linkedin.venice.helix.WhitelistAccessor;

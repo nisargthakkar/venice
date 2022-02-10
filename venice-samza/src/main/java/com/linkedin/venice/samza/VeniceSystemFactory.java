@@ -1,5 +1,6 @@
 package com.linkedin.venice.samza;
 
+import com.linkedin.venice.ConfigConstants;
 import com.linkedin.venice.exceptions.VeniceException;
 import com.linkedin.venice.meta.Version;
 import com.linkedin.venice.security.SSLFactory;
@@ -26,6 +27,7 @@ import org.apache.samza.system.SystemProducer;
 import org.apache.samza.util.SinglePartitionWithoutOffsetsSystemAdmin;
 
 import static com.linkedin.venice.CommonConfigKeys.*;
+import static com.linkedin.venice.ConfigKeys.*;
 import static com.linkedin.venice.VeniceConstants.*;
 
 
@@ -66,10 +68,11 @@ public class VeniceSystemFactory implements SystemFactory, Serializable {
    */
   public static final String VENICE_PARTITIONERS = "venice.partitioners";
 
-  // D2 service name for local cluster
-  public static final String VENICE_LOCAL_D2_SERVICE = "VeniceController";
-  // D2 service name for parent cluster
-  public static final String VENICE_PARENT_D2_SERVICE = "VeniceParentController";
+  // D2 service name config for local controller
+  public static final String VENICE_LOCAL_CONTROLLER_D2_SERVICE_PROPERTY = "venice.local.controller.d2.service";
+
+  // D2 service name config for parent controller
+  public static final String VENICE_PARENT_CONTROLLER_D2_SERVICE_PROPERTY = "venice.parent.controller.d2.service";
 
   /**
    * A Samza job config to check whether the protocol versions used at runtime are valid in
@@ -166,14 +169,25 @@ public class VeniceSystemFactory implements SystemFactory, Serializable {
           .collect(Collectors.joining(",")));
     }
 
-    String veniceParentZKHosts = config.get(VENICE_PARENT_D2_ZK_HOSTS);
-    if (isEmpty(veniceParentZKHosts)) {
+    String veniceParentD2ZKHosts = config.get(VENICE_PARENT_D2_ZK_HOSTS);
+    if (isEmpty(veniceParentD2ZKHosts)) {
       throw new SamzaException(VENICE_PARENT_D2_ZK_HOSTS + " should not be null, please put this property in your app-def.xml");
     }
-    String localVeniceZKHosts = config.get(D2_ZK_HOSTS_PROPERTY);
-    if (isEmpty(localVeniceZKHosts)) {
+    String localVeniceD2ZKHosts = config.get(D2_ZK_HOSTS_PROPERTY);
+    if (isEmpty(localVeniceD2ZKHosts)) {
       throw new SamzaException(D2_ZK_HOSTS_PROPERTY + " should not be null");
     }
+
+    String parentControllerD2Service = config.get(VENICE_PARENT_CONTROLLER_D2_SERVICE_PROPERTY);
+    if (isEmpty(parentControllerD2Service)) {
+      parentControllerD2Service = ConfigConstants.DEFAULT_VENICE_PARENT_CONTROLLER_D2_SERVICE;
+    }
+
+    String localControllerD2Service = config.get(VENICE_LOCAL_CONTROLLER_D2_SERVICE_PROPERTY);
+    if (isEmpty(localControllerD2Service)) {
+      localControllerD2Service = ConfigConstants.DEFAULT_VENICE_LOCAL_CONTROLLER_D2_SERVICE;
+    }
+
 
     // Build Ssl Factory if Controller SSL is enabled
     Optional<SSLFactory> sslFactory = Optional.empty();
@@ -191,8 +205,8 @@ public class VeniceSystemFactory implements SystemFactory, Serializable {
     LOGGER.info(prefix + VENICE_STORE + ": " + storeName);
     LOGGER.info(prefix + VENICE_AGGREGATE + ": " + veniceAggregate);
     LOGGER.info(prefix + VENICE_PUSH_TYPE + ": " + venicePushType);
-    LOGGER.info(VENICE_PARENT_D2_ZK_HOSTS + ": " + veniceParentZKHosts);
-    LOGGER.info(D2_ZK_HOSTS_PROPERTY + ": " + localVeniceZKHosts);
+    LOGGER.info(VENICE_PARENT_D2_ZK_HOSTS + ": " + veniceParentD2ZKHosts);
+    LOGGER.info(D2_ZK_HOSTS_PROPERTY + ": " + localVeniceD2ZKHosts);
 
     String runningFabric = config.get(SYSTEM_PROPERTY_FOR_APP_RUNNING_REGION);
     LOGGER.info("Running Fabric from config: " + runningFabric);
@@ -211,13 +225,14 @@ public class VeniceSystemFactory implements SystemFactory, Serializable {
     String veniceD2ZKHost;
     String veniceD2Service;
     if (veniceAggregate) {
-      veniceD2ZKHost = veniceParentZKHosts;
-      veniceD2Service = VENICE_PARENT_D2_SERVICE;
+      veniceD2ZKHost = veniceParentD2ZKHosts;
+      veniceD2Service = parentControllerD2Service;
     } else {
-      veniceD2ZKHost = localVeniceZKHosts;
-      veniceD2Service = VENICE_LOCAL_D2_SERVICE;
+      veniceD2ZKHost = localVeniceD2ZKHosts;
+      veniceD2Service = localControllerD2Service;
     }
     LOGGER.info("Will use the following Venice D2 ZK hosts: " + veniceD2ZKHost);
+    LOGGER.info("Will use the following Venice controller D2 service: " + veniceD2Service);
 
     boolean verifyLatestProtocolPresent = config.getBoolean(VALIDATE_VENICE_INTERNAL_SCHEMA_VERSION, false);
     SystemProducer systemProducer = createSystemProducer(veniceD2ZKHost, veniceD2Service, storeName, venicePushType,

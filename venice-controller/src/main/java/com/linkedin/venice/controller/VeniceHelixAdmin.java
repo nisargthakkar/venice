@@ -23,7 +23,6 @@ import com.linkedin.venice.controller.init.ClusterLeaderInitializationManager;
 import com.linkedin.venice.controller.init.ClusterLeaderInitializationRoutine;
 import com.linkedin.venice.controller.init.InternalRTStoreInitializationRoutine;
 import com.linkedin.venice.controller.init.LatestVersionPromoteToCurrentTimestampCorrectionRoutine;
-import com.linkedin.venice.controller.init.SystemSchemaInitializationRoutine;
 import com.linkedin.venice.controller.kafka.StoreStatusDecider;
 import com.linkedin.venice.controller.kafka.consumer.AdminConsumerService;
 import com.linkedin.venice.controller.kafka.consumer.ControllerKafkaClientFactory;
@@ -111,7 +110,6 @@ import com.linkedin.venice.participant.protocol.enums.ParticipantMessageType;
 import com.linkedin.venice.pushmonitor.ExecutionStatus;
 import com.linkedin.venice.pushmonitor.KillOfflinePushMessage;
 import com.linkedin.venice.pushmonitor.OfflinePushStatus;
-import com.linkedin.venice.pushmonitor.PartitionStatus;
 import com.linkedin.venice.pushmonitor.PushMonitor;
 import com.linkedin.venice.pushmonitor.PushMonitorDelegator;
 import com.linkedin.venice.pushmonitor.PushStatusDecider;
@@ -128,7 +126,6 @@ import com.linkedin.venice.schema.rmd.ReplicationMetadataSchemaEntry;
 import com.linkedin.venice.schema.rmd.ReplicationMetadataVersionId;
 import com.linkedin.venice.schema.writecompute.DerivedSchemaEntry;
 import com.linkedin.venice.security.SSLFactory;
-import com.linkedin.venice.serialization.avro.AvroProtocolDefinition;
 import com.linkedin.venice.serialization.avro.VeniceAvroKafkaSerializer;
 import com.linkedin.venice.serializer.AvroSerializer;
 import com.linkedin.venice.serializer.RecordDeserializer;
@@ -159,7 +156,6 @@ import com.linkedin.venice.writer.VeniceWriter;
 import com.linkedin.venice.writer.VeniceWriterFactory;
 import io.tehuti.metrics.MetricsRepository;
 import java.nio.ByteBuffer;
-import java.sql.Timestamp;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -196,7 +192,6 @@ import org.apache.helix.controller.rebalancer.strategy.CrushRebalanceStrategy;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixManager;
 import org.apache.helix.manager.zk.ZNRecordSerializer;
-import org.apache.helix.manager.zk.ZkBaseDataAccessor;
 import org.apache.helix.model.ClusterConfig;
 import org.apache.helix.model.ExternalView;
 import org.apache.helix.model.HelixConfigScope;
@@ -459,33 +454,6 @@ public class VeniceHelixAdmin implements Admin, StoreCleaner {
       dataRecoveryManager = new DataRecoveryManager(this, d2Client, icProvider);
 
       List<ClusterLeaderInitializationRoutine> initRoutines = new ArrayList<>();
-      initRoutines.add(new SystemSchemaInitializationRoutine(
-          AvroProtocolDefinition.KAFKA_MESSAGE_ENVELOPE, multiClusterConfigs, this));
-      initRoutines.add(new SystemSchemaInitializationRoutine(
-          AvroProtocolDefinition.PARTITION_STATE, multiClusterConfigs, this));
-      initRoutines.add(new SystemSchemaInitializationRoutine(
-          AvroProtocolDefinition.STORE_VERSION_STATE, multiClusterConfigs, this));
-
-      if (multiClusterConfigs.isZkSharedMetaSystemSchemaStoreAutoCreationEnabled()) {
-          // Add routine to create zk shared metadata system store
-          UpdateStoreQueryParams metadataSystemStoreUpdate = new UpdateStoreQueryParams().setHybridRewindSeconds(TimeUnit.DAYS.toSeconds(1)) // 1 day rewind
-              .setHybridOffsetLagThreshold(1).setHybridTimeLagThreshold(TimeUnit.MINUTES.toSeconds(1)) // 1 mins
-              .setLeaderFollowerModel(true).setWriteComputationEnabled(true)
-              .setPartitionCount(1);
-          initRoutines.add(new SystemSchemaInitializationRoutine(AvroProtocolDefinition.METADATA_SYSTEM_SCHEMA_STORE,
-              multiClusterConfigs, this, Optional.of(AvroProtocolDefinition.METADATA_SYSTEM_SCHEMA_STORE_KEY.getCurrentProtocolVersionSchema()),
-              Optional.of(metadataSystemStoreUpdate), true));
-      }
-      if (multiClusterConfigs.isZkSharedDaVinciPushStatusSystemSchemaStoreAutoCreationEnabled()) {
-          // Add routine to create zk shared da vinci push status system store
-          UpdateStoreQueryParams daVinciPushStatusSystemStoreUpdate = new UpdateStoreQueryParams().setHybridRewindSeconds(TimeUnit.DAYS.toSeconds(1)) // 1 day rewind
-              .setHybridOffsetLagThreshold(1).setHybridTimeLagThreshold(TimeUnit.MINUTES.toSeconds(1)) // 1 mins
-              .setLeaderFollowerModel(true).setWriteComputationEnabled(true)
-              .setPartitionCount(1);
-          initRoutines.add(new SystemSchemaInitializationRoutine(AvroProtocolDefinition.PUSH_STATUS_SYSTEM_SCHEMA_STORE,
-              multiClusterConfigs, this, Optional.of(AvroProtocolDefinition.PUSH_STATUS_SYSTEM_SCHEMA_STORE_KEY.getCurrentProtocolVersionSchema()),
-              Optional.of(daVinciPushStatusSystemStoreUpdate), true));
-      }
 
       // TODO: Remove this latest version promote to current timestamp update logic in the future.
       initRoutines.add(new LatestVersionPromoteToCurrentTimestampCorrectionRoutine(this));

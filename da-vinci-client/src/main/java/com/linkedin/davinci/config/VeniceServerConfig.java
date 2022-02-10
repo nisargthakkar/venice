@@ -82,14 +82,14 @@ public class VeniceServerConfig extends VeniceClusterConfig {
 
   /**
    * Considering the consumer thread could put various sizes of messages into the shared queue, the internal
-   * {@link com.linkedin.venice.kafka.consumer.MemoryBoundBlockingQueue} won't notify the waiting thread (consumer thread)
+   * {@link com.linkedin.davinci.kafka.consumer.MemoryBoundBlockingQueue} won't notify the waiting thread (consumer thread)
    * right away when some message gets processed until the freed memory hit the follow config: {@link #storeWriterBufferNotifyDelta}.
    * The reason behind this design:
    * When the buffered queue is full, and the processing thread keeps processing small message, the bigger message won't
    * have chance to get queued into the buffer since the memory freed by the processed small message is not enough to
    * fit the bigger message.
    *
-   * With this delta config, {@link com.linkedin.venice.kafka.consumer.MemoryBoundBlockingQueue} will guarantee some fairness
+   * With this delta config, {@link com.linkedin.davinci.kafka.consumer.MemoryBoundBlockingQueue} will guarantee some fairness
    * among various sizes of messages when buffered queue is full.
    *
    * When tuning this config, we need to consider the following tradeoffs:
@@ -275,6 +275,11 @@ public class VeniceServerConfig extends VeniceClusterConfig {
 
   private final int remoteIngestionRepairSleepInterval;
 
+  private final String parentFabricD2ZkHosts;
+  private final String parentControllerD2ServiceName;
+
+  private final int controllerRequestRetryCount;
+
   public VeniceServerConfig(VeniceProperties serverProperties) throws ConfigurationException {
     this(serverProperties, Optional.empty());
   }
@@ -442,6 +447,11 @@ public class VeniceServerConfig extends VeniceClusterConfig {
      * 2. Reduce checkpoint threshold
      */
     serverIngestionCheckpointDuringGracefulShutdownEnabled = serverProperties.getBoolean(SERVER_INGESTION_CHECKPOINT_DURING_GRACEFUL_SHUTDOWN_ENABLED, true);
+
+    parentFabricD2ZkHosts = serverProperties.getString(SERVER_PARENT_FABRIC_D2_ZK_HOSTS, (String) null);
+    parentControllerD2ServiceName = serverProperties.getString(SERVER_PARENT_CONTROLLER_D2_SERVICE_NAME, (String) null);
+
+    controllerRequestRetryCount = serverProperties.getInt(SERVER_CONTROLLER_REQUEST_RETRY_COUNT, 5);
   }
 
   public int getListenerPort() {
@@ -840,5 +850,17 @@ public class VeniceServerConfig extends VeniceClusterConfig {
 
   public int getRemoteIngestionRepairSleepInterval() {
     return remoteIngestionRepairSleepInterval;
+  }
+
+  public String getParentFabricD2ZkHosts() {
+    return parentFabricD2ZkHosts;
+  }
+
+  public String getParentControllerD2ServiceName() {
+    return parentControllerD2ServiceName;
+  }
+
+  public int getControllerRequestRetryCount() {
+    return controllerRequestRetryCount;
   }
 }

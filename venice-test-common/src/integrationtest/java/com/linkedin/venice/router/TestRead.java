@@ -552,7 +552,7 @@ public abstract class TestRead {
     }
   }
 
-  @Test(timeOut = 60 * Time.MS_PER_SECOND)
+  @Test(timeOut = 60 * Time.MS_PER_SECOND, invocationCount = 100)
   public void testRequestUsageMetric() {
     if (!isTestEnabled()) {
       return;

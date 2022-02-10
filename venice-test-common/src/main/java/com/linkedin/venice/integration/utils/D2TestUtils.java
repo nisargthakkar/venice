@@ -15,6 +15,7 @@ import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.common.HttpProtocolVersion;
 import com.linkedin.security.ssl.access.control.SSLEngineComponentFactory;
+import com.linkedin.venice.ConfigConstants;
 import com.linkedin.venice.exceptions.VeniceException;
 
 import com.linkedin.venice.utils.SslUtils;
@@ -38,7 +39,7 @@ public class D2TestUtils {
   public static final String DEFAULT_TEST_SERVICE_NAME = DEFAULT_D2_SERVICE_NAME;
 
   public static final String CONTROLLER_CLUSTER_NAME = "VeniceController";
-  public static final String CONTROLLER_SERVICE_NAME = "VeniceController";
+  public static final String CONTROLLER_SERVICE_NAME = ConfigConstants.DEFAULT_VENICE_LOCAL_CONTROLLER_D2_SERVICE;
 
 
   public static void setupD2Config(String zkHosts, boolean https){

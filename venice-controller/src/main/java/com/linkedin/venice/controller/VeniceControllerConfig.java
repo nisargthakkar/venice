@@ -178,7 +178,7 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
     this.adminCheckReadMethodForKafka = props.getBoolean(ADMIN_CHECK_READ_METHOD_FOR_KAFKA, true);
     this.controllerClusterName = props.getString(CONTROLLER_CLUSTER, "venice-controllers");
     this.controllerClusterReplica = props.getInt(CONTROLLER_CLUSTER_REPLICA, 3);
-    this.controllerClusterZkAddress = props.getString(CONTROLLER_CLUSTER_ZK_ADDRESSS, getZkAddress());
+    this.controllerClusterZkAddress = props.getString(CONTROLLER_CLUSTER_ZK_ADDRESS, getZkAddress());
     this.topicCreationThrottlingTimeWindowMs = props.getLong(TOPIC_CREATION_THROTTLING_TIME_WINDOW_MS, 10 * Time.MS_PER_SECOND);
     this.parent = props.getBoolean(ConfigKeys.CONTROLLER_PARENT_MODE, false);
     this.activeActiveEnabledOnController = props.getBoolean(ConfigKeys.ACTIVE_ACTIVE_ENABLED_ON_CONTROLLER, false);

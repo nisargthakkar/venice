@@ -43,7 +43,7 @@ public class ConfigKeys {
 
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
   public static final String SSL_KAFKA_BOOTSTRAP_SERVERS = "ssl.kafka.bootstrap.servers";
-  public static final String KAFKA_ADMIN_GET_TOPIC_CONFG_MAX_RETRY_TIME_SEC = "kafka.admin.get.topic.config.max.retry.sec";
+  public static final String KAFKA_ADMIN_GET_TOPIC_CONFIG_MAX_RETRY_TIME_SEC = "kafka.admin.get.topic.config.max.retry.sec";
 
   public static final String KAFKA_REQUEST_TIMEOUT_MS = ApacheKafkaProducer.PROPERTIES_KAFKA_PREFIX + ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG;
   public static final String KAFKA_DELIVERY_TIMEOUT_MS = ApacheKafkaProducer.PROPERTIES_KAFKA_PREFIX + ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG;
@@ -227,7 +227,7 @@ public class ConfigKeys {
   public static final String KAFKA_FETCH_PARTITION_MAX_SIZE_PER_SEC = "kafka.fetch.partition.max.size.per.sec";
 
   // Controller specific configs
-  public static final String CONTROLLER_CLUSTER_ZK_ADDRESSS = "controller.cluster.zk.address";
+  public static final String CONTROLLER_CLUSTER_ZK_ADDRESS = "controller.cluster.zk.address";
   /** Cluster name for all parent controllers */
   public static final String CONTROLLER_CLUSTER = "controller.cluster.name";
 
@@ -1823,5 +1823,14 @@ public class ConfigKeys {
    * False: servers will not flush any data during shutdown. After restart, servers will resume ingestion from the last checkpoint.
    */
   public static final String SERVER_INGESTION_CHECKPOINT_DURING_GRACEFUL_SHUTDOWN_ENABLED = "server.ingestion.checkpoint.during.graceful.shutdown.enabled";
+
+  // Server controller request retry count
+  public static final String SERVER_CONTROLLER_REQUEST_RETRY_COUNT = "server.controller.request.retry.count";
+
+  //
+  public static final String SERVER_PARENT_FABRIC_D2_ZK_HOSTS = "server.parent.fabric.d2.zk.hosts";
+
+  //
+  public static final String SERVER_PARENT_CONTROLLER_D2_SERVICE_NAME = "server.parent.fabric.d2.service.name";
 }
 
