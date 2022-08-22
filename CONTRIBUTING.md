@@ -10,6 +10,7 @@ license.
 
 HELLO. A new line.
 Oh wow. One more line.
+Updated the same commit.
 
 Responsible Disclosure of Security Vulnerabilities
 ==================================================
