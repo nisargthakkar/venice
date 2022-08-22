@@ -8,6 +8,8 @@ you have the right to bind your employer).  By submitting code, you
 to LinkedIn and the open source community subject to the BSD 2-Clause
 license.
 
+HELLO. A new line.
+
 Responsible Disclosure of Security Vulnerabilities
 ==================================================
 
