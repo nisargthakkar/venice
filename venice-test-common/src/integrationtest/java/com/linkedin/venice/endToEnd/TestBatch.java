@@ -577,6 +577,22 @@ public abstract class TestBatch {
   }
 
   @Test(timeOut = TEST_TIMEOUT)
+  public void testKafkaInputBatchJobWithAmpFactor() throws Exception {
+    H2VValidator validator = (avroClient, vsonClient, metricsRepository) -> {
+      // test single get
+      for (int i = 1; i <= 100; i++) {
+        Assert.assertEquals(avroClient.get(Integer.toString(i)).get().toString(), "test_name_" + i);
+      }
+    };
+    String storeName = testBatchStore(inputDir -> {
+      Schema recordSchema = writeSimpleAvroFileWithUserSchema(inputDir, false);
+      return new Pair<>(recordSchema.getField("id").schema(), recordSchema.getField("name").schema());
+    }, properties -> {}, validator, new UpdateStoreQueryParams().setAmplificationFactor(3));
+    // Re-push with Kafka Input
+    testRepush(storeName, validator);
+  }
+
+  @Test(timeOut = TEST_TIMEOUT)
   public void testKafkaInputAAStore() throws Exception {
     H2VValidator validator = (avroClient, vsonClient, metricsRepository) -> {
       // test single get
