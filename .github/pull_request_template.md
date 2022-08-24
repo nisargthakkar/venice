@@ -1,11 +1,18 @@
-## [component1]...[componentN] Summary, imperative, start upper case, don't end with a period
 <!--
+Thank you for contributing to Venice. Please make sure the PR follows certain guidelines.
+
+Add a list of affected components in the PR title in the following format:
+[component1]...[componentN] Concise commit message
+
 Valid component tags are: [da-vinci], [server], [controller],
 [router], [samza], [h2v], [fast-client], [thin-client],
 [admin-tool], [test]
 
-Example: [server][da-vinci] Use dedicated thread to persist data to storage engine
+Example title: [server][da-vinci] Use dedicated thread to persist data to storage engine
+-->
 
+## Summary, imperative, start upper case, don't end with a period
+<!--
 Describe
 - What changes to make and why you are making these changes.
 - How are you going to achieve your goal.
