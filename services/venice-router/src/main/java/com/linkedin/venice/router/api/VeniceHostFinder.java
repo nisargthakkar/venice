@@ -1,6 +1,7 @@
 package com.linkedin.venice.router.api;
 
-import static com.linkedin.venice.read.RequestType.*;
+import static com.linkedin.venice.read.RequestType.MULTI_GET;
+import static com.linkedin.venice.read.RequestType.SINGLE_GET;
 
 import com.linkedin.ddsstorage.router.api.HostFinder;
 import com.linkedin.ddsstorage.router.api.HostHealthMonitor;

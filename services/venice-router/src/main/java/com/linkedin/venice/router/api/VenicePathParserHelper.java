@@ -1,6 +1,6 @@
 package com.linkedin.venice.router.api;
 
-import static com.linkedin.venice.router.api.VenicePathParser.*;
+import static com.linkedin.venice.router.api.VenicePathParser.TYPE_STORAGE;
 
 import com.linkedin.ddsstorage.netty4.misc.BasicFullHttpRequest;
 import com.linkedin.venice.router.utils.VeniceRouterUtils;

@@ -1,8 +1,15 @@
 package com.linkedin.venice.router.api;
 
 import static com.linkedin.ddsstorage.router.api.MetricNames.*;
-import static com.linkedin.venice.HttpConstants.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static com.linkedin.venice.HttpConstants.VENICE_COMPRESSION_STRATEGY;
+import static com.linkedin.venice.HttpConstants.VENICE_REQUEST_RCU;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_GATEWAY;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.MOVED_PERMANENTLY;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.TOO_MANY_REQUESTS;
 
 import com.linkedin.ddsstorage.base.misc.HeaderNames;
 import com.linkedin.ddsstorage.base.misc.Metrics;
