@@ -99,58 +99,6 @@ public class TestClusterLevelConfigForActiveActiveReplication extends AbstractTe
   }
 
   @Test(timeOut = TEST_TIMEOUT)
-  public void testClusterLevelActiveActiveReplicationConfigForNewIncrementalPushStores() throws IOException {
-    TopicManagerRepository originalTopicManagerRepository = prepareCluster(true, false);
-    String storeNameIncremental = Utils.getUniqueString("test-store-incremental");
-    String pushJobId1 = "test-push-job-id-1";
-    /**
-     * Do not enable any store-level config for leader/follower mode or native replication feature.
-     */
-    veniceAdmin.createStore(clusterName, storeNameIncremental, "test-owner", KEY_SCHEMA, VALUE_SCHEMA);
-    /**
-     * Add a version
-     */
-    veniceAdmin.addVersionAndTopicOnly(
-        clusterName,
-        storeNameIncremental,
-        pushJobId1,
-        VERSION_ID_UNSET,
-        1,
-        1,
-        false,
-        true,
-        Version.PushType.STREAM,
-        null,
-        null,
-        Optional.empty(),
-        -1,
-        1,
-        Optional.empty(),
-        false);
-
-    // Version 1 should exist.
-    assertEquals(veniceAdmin.getStore(clusterName, storeNameIncremental).getVersions().size(), 1);
-
-    // Check store level Active/Active is enabled or not
-    veniceAdmin.setIncrementalPushEnabled(clusterName, storeNameIncremental, false);
-    assertFalse(veniceAdmin.getStore(clusterName, storeNameIncremental).isIncrementalPushEnabled());
-    assertFalse(veniceAdmin.getStore(clusterName, storeNameIncremental).isActiveActiveReplicationEnabled());
-
-    veniceAdmin.setIncrementalPushEnabled(clusterName, storeNameIncremental, true);
-    assertTrue(veniceAdmin.getStore(clusterName, storeNameIncremental).isIncrementalPushEnabled());
-    assertTrue(veniceAdmin.getStore(clusterName, storeNameIncremental).isActiveActiveReplicationEnabled());
-
-    // After inc push is disabled, even default A/A config for pure hybrid store is false,
-    // original store A/A config is enabled.
-    veniceAdmin.setIncrementalPushEnabled(clusterName, storeNameIncremental, false);
-    assertFalse(veniceAdmin.getStore(clusterName, storeNameIncremental).isIncrementalPushEnabled());
-    assertTrue(veniceAdmin.getStore(clusterName, storeNameIncremental).isActiveActiveReplicationEnabled());
-
-    // Set topic original topic manager back
-    veniceAdmin.setTopicManagerRepository(originalTopicManagerRepository);
-  }
-
-  @Test(timeOut = TEST_TIMEOUT)
   public void testClusterLevelActiveActiveReplicationConfigForNewBatchOnlyStores() throws IOException {
     TopicManagerRepository originalTopicManagerRepository = prepareCluster(false, true);
     String storeNameBatchOnly = Utils.getUniqueString("test-store-batch-only");

@@ -39,11 +39,11 @@ import static com.linkedin.venice.ConfigKeys.CONTROLLER_EARLY_DELETE_BACKUP_ENAB
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_ENABLE_BATCH_PUSH_FROM_ADMIN_IN_CHILD;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_ENABLE_DISABLED_REPLICA_ENABLED;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_ENFORCE_SSL;
+import static com.linkedin.venice.ConfigKeys.CONTROLLER_EXTERNAL_SUPERSET_SCHEMA_GENERATION_ENABLED;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_HAAS_SUPER_CLUSTER_NAME;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_IN_AZURE_FABRIC;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_MIN_SCHEMA_COUNT_TO_KEEP;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_PARENT_EXTERNAL_SUPERSET_SCHEMA_GENERATION_ENABLED;
-import static com.linkedin.venice.ConfigKeys.CONTROLLER_PARENT_MODE;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_PARENT_SYSTEM_STORE_HEARTBEAT_CHECK_WAIT_TIME_SECONDS;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_PARENT_SYSTEM_STORE_REPAIR_CHECK_INTERVAL_SECONDS;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_PARENT_SYSTEM_STORE_REPAIR_RETRY_COUNT;
@@ -149,7 +149,6 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
   private final int controllerClusterReplica;
   private final String controllerClusterName;
   private final String controllerClusterZkAddress;
-  private final boolean parent;
   private final List<String> childDataCenterAllowlist;
   private final Map<String, String> childDataCenterControllerUrlMap;
   private final String d2ServiceName;
@@ -309,7 +308,7 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
 
   private final int parentSystemStoreRepairRetryCount;
 
-  private final boolean parentExternalSupersetSchemaGenerationEnabled;
+  private final boolean externalSupersetSchemaGenerationEnabled;
 
   private final boolean systemSchemaInitializationAtStartTimeEnabled;
 
@@ -336,7 +335,6 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
     this.controllerClusterZkAddress = props.getString(CONTROLLER_CLUSTER_ZK_ADDRESSS, getZkAddress());
     this.topicCreationThrottlingTimeWindowMs =
         props.getLong(TOPIC_CREATION_THROTTLING_TIME_WINDOW_MS, 10 * Time.MS_PER_SECOND);
-    this.parent = props.getBoolean(CONTROLLER_PARENT_MODE, false);
     this.activeActiveEnabledOnController = props.getBoolean(ACTIVE_ACTIVE_ENABLED_ON_CONTROLLER, false);
     this.activeActiveRealTimeSourceFabrics =
         Utils.parseCommaSeparatedStringToSet(props.getString(ACTIVE_ACTIVE_REAL_TIME_SOURCE_FABRIC_LIST, ""));
@@ -355,7 +353,7 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
     }
     this.d2ServiceName =
         childDataCenterControllerD2Map.isEmpty() ? null : props.getString(CHILD_CLUSTER_D2_SERVICE_NAME);
-    if (this.parent) {
+    if (super.isParent()) {
       if (childDataCenterControllerUrlMap.isEmpty() && childDataCenterControllerD2Map.isEmpty()) {
         throw new VeniceException("child controller list can not be empty");
       }
@@ -508,7 +506,7 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
         props.getBoolean(CONTROLLER_ZK_SHARED_DAVINCI_PUSH_STATUS_SYSTEM_SCHEMA_STORE_AUTO_CREATION_ENABLED, true);
     this.systemStoreAclSynchronizationDelayMs =
         props.getLong(CONTROLLER_SYSTEM_STORE_ACL_SYNCHRONIZATION_DELAY_MS, TimeUnit.HOURS.toMillis(1));
-    this.regionName = RegionUtils.getLocalRegionName(props, parent);
+    this.regionName = RegionUtils.getLocalRegionName(props, super.isParent());
     LOGGER.info("Final region name for this node: {}", this.regionName);
     this.disabledRoutes = parseControllerRoutes(props, CONTROLLER_DISABLED_ROUTES, Collections.emptyList());
     this.adminTopicRemoteConsumptionEnabled = props.getBoolean(ADMIN_TOPIC_REMOTE_CONSUMPTION_ENABLED, false);
@@ -545,8 +543,10 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
     this.parentSystemStoreRepairRetryCount = props.getInt(CONTROLLER_PARENT_SYSTEM_STORE_REPAIR_RETRY_COUNT, 1);
     this.clusterDiscoveryD2ServiceName =
         props.getString(CLUSTER_DISCOVERY_D2_SERVICE, ClientConfig.DEFAULT_CLUSTER_DISCOVERY_D2_SERVICE_NAME);
-    this.parentExternalSupersetSchemaGenerationEnabled =
-        props.getBoolean(CONTROLLER_PARENT_EXTERNAL_SUPERSET_SCHEMA_GENERATION_ENABLED, false);
+    this.externalSupersetSchemaGenerationEnabled = props.getBooleanWithAlternative(
+        CONTROLLER_EXTERNAL_SUPERSET_SCHEMA_GENERATION_ENABLED,
+        CONTROLLER_PARENT_EXTERNAL_SUPERSET_SCHEMA_GENERATION_ENABLED,
+        false);
     this.systemSchemaInitializationAtStartTimeEnabled =
         props.getBoolean(SYSTEM_SCHEMA_INITIALIZATION_AT_START_TIME_ENABLED, false);
     this.isKMERegistrationFromMessageHeaderEnabled =
@@ -613,10 +613,6 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
 
   public String getControllerClusterZkAddress() {
     return controllerClusterZkAddress;
-  }
-
-  public boolean isParent() {
-    return parent;
   }
 
   public long getTopicCreationThrottlingTimeWindowMs() {
@@ -1024,8 +1020,8 @@ public class VeniceControllerConfig extends VeniceControllerClusterConfig {
     return parentSystemStoreRepairRetryCount;
   }
 
-  public boolean isParentExternalSupersetSchemaGenerationEnabled() {
-    return parentExternalSupersetSchemaGenerationEnabled;
+  public boolean isExternalSupersetSchemaGenerationEnabled() {
+    return externalSupersetSchemaGenerationEnabled;
   }
 
   public boolean isSystemSchemaInitializationAtStartTimeEnabled() {

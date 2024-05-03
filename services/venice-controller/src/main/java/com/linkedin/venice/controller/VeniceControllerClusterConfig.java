@@ -1,6 +1,7 @@
 package com.linkedin.venice.controller;
 
 import static com.linkedin.venice.CommonConfigKeys.SSL_FACTORY_CLASS_NAME;
+import static com.linkedin.venice.ConfigKeys.ACTIVE_ACTIVE_REAL_TIME_SOURCE_FABRIC_LIST;
 import static com.linkedin.venice.ConfigKeys.ADMIN_TOPIC_REPLICATION_FACTOR;
 import static com.linkedin.venice.ConfigKeys.CHILD_CLUSTER_ALLOWLIST;
 import static com.linkedin.venice.ConfigKeys.CLUSTER_NAME;
@@ -10,6 +11,7 @@ import static com.linkedin.venice.ConfigKeys.CONTROLLER_DEFAULT_READ_QUOTA_PER_R
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_DISABLE_PARENT_REQUEST_TOPIC_FOR_STREAM_PUSHES;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_JETTY_CONFIG_OVERRIDE_PREFIX;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_NAME;
+import static com.linkedin.venice.ConfigKeys.CONTROLLER_PARENT_MODE;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_SCHEMA_VALIDATION_ENABLED;
 import static com.linkedin.venice.ConfigKeys.CONTROLLER_SSL_ENABLED;
 import static com.linkedin.venice.ConfigKeys.DEFAULT_MAX_NUMBER_OF_PARTITIONS;
@@ -51,6 +53,7 @@ import static com.linkedin.venice.ConfigKeys.KAFKA_SECURITY_PROTOCOL;
 import static com.linkedin.venice.ConfigKeys.LEAKED_PUSH_STATUS_CLEAN_UP_SERVICE_SLEEP_INTERVAL_MS;
 import static com.linkedin.venice.ConfigKeys.LEAKED_RESOURCE_ALLOWED_LINGER_TIME_MS;
 import static com.linkedin.venice.ConfigKeys.MIN_ACTIVE_REPLICA;
+import static com.linkedin.venice.ConfigKeys.MULTI_REGION;
 import static com.linkedin.venice.ConfigKeys.NATIVE_REPLICATION_SOURCE_FABRIC_AS_DEFAULT_FOR_BATCH_ONLY_STORES;
 import static com.linkedin.venice.ConfigKeys.NATIVE_REPLICATION_SOURCE_FABRIC_AS_DEFAULT_FOR_HYBRID_STORES;
 import static com.linkedin.venice.ConfigKeys.OFFLINE_JOB_START_TIMEOUT_MS;
@@ -81,12 +84,14 @@ import com.linkedin.venice.meta.RoutingStrategy;
 import com.linkedin.venice.pushmonitor.LeakedPushStatusCleanUpService;
 import com.linkedin.venice.pushmonitor.PushMonitorType;
 import com.linkedin.venice.utils.KafkaSSLUtils;
+import com.linkedin.venice.utils.Utils;
 import com.linkedin.venice.utils.VeniceProperties;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.helix.controller.rebalancer.strategy.CrushRebalanceStrategy;
 import org.apache.kafka.common.protocol.SecurityProtocol;
@@ -102,6 +107,13 @@ public class VeniceControllerClusterConfig {
 
   private final VeniceProperties props;
   private String clusterName;
+
+  /**
+   * Specify if the current Venice deployment is deployed in a multi-region setup or not.
+   */
+  private boolean multiRegion;
+  private boolean parent;
+
   private String zkAddress;
   private String controllerName;
   private PersistenceType persistenceType;
@@ -270,7 +282,21 @@ public class VeniceControllerClusterConfig {
   }
 
   private void initFieldsWithProperties(VeniceProperties props) {
+    parent = props.getBoolean(CONTROLLER_PARENT_MODE, false);
+
+    Set<String> activeActiveRealTimeSourceFabrics = Utils
+        .parseCommaSeparatedStringToSet(props.getString(ACTIVE_ACTIVE_REAL_TIME_SOURCE_FABRIC_LIST, (String) null));
+    /**
+     * Historically, {@link MULTI_REGION} was not a supported config. It was handled on a case-by-case basis by
+     * carefully setting feature configs on various components. While this works for ramping new features, it makes it
+     * hard to remove the feature flags once the feature is fully ramped. Ideally, this should be a mandatory config,
+     * but that would break backward compatibility and hence, we infer the multi-region setup through the presence of
+     * a valid {@link ACTIVE_ACTIVE_REAL_TIME_SOURCE_FABRIC_LIST}.
+     */
+    boolean multiRegionInferred = parent || !activeActiveRealTimeSourceFabrics.isEmpty();
+
     clusterName = props.getString(CLUSTER_NAME);
+    multiRegion = props.getBoolean(MULTI_REGION, multiRegionInferred);
     zkAddress = props.getString(ZOOKEEPER_ADDRESS);
     controllerName = props.getString(CONTROLLER_NAME);
     kafkaReplicationFactor = props.getInt(KAFKA_REPLICATION_FACTOR, DEFAULT_KAFKA_REPLICATION_FACTOR);
@@ -417,6 +443,14 @@ public class VeniceControllerClusterConfig {
 
   public String getClusterName() {
     return clusterName;
+  }
+
+  public boolean isMultiRegion() {
+    return multiRegion;
+  }
+
+  public boolean isParent() {
+    return parent;
   }
 
   public final String getZkAddress() {

@@ -58,6 +58,10 @@ public class VeniceControllerMultiClusterConfig {
     return getCommonConfig().adminCheckReadMethodForKafka();
   }
 
+  public boolean isMultiRegion() {
+    return getCommonConfig().isMultiRegion();
+  }
+
   public boolean isParent() {
     return getCommonConfig().isParent();
   }
