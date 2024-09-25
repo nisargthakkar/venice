@@ -3,6 +3,12 @@ name: AnalyseStatiqueEtTestsUnitaires
 
 on: [push, pull_request, workflow_dispatch]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For the primary repo, only cancel on cancel for ongoing runs of the current pull request when it gets updated
+  # For forks, cancel all ongoing runs on push, pull_request, workflow_dispatch
+  cancel-in-progress: ${{ github.repository != 'linkedin/venice' || github.event_name == 'pull_request' }}
+
 jobs:
   ValidateGradleWrapper:
     strategy:
@@ -111,6 +117,3 @@ jobs:
         shell: bash
         run: |
           echo "LGTM!"
-
-
-
