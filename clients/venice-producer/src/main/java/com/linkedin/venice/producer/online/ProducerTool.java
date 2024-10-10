@@ -18,8 +18,12 @@ import com.linkedin.venice.utils.SslUtils;
 import com.linkedin.venice.utils.VeniceProperties;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.avro.Schema;
@@ -30,6 +34,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 
@@ -198,18 +203,25 @@ public class ProducerTool {
   }
 
   private static Object getValueObject(String valueString, RouterBasedStoreSchemaFetcher schemaFetcher) {
-    Object value = null;
     Map<Integer, Exception> exceptionMap = new HashMap<>();
-    for (Map.Entry<Integer, Schema> valueSchemaEntry: schemaFetcher.getAllValueSchemasWithId().entrySet()) {
-      try {
-        value = adaptDataToSchema(valueString, valueSchemaEntry.getValue());
-        break;
-      } catch (Exception e) {
-        exceptionMap.put(valueSchemaEntry.getKey(), e);
-        // Try the next schema
-      }
-    }
-    if (value == null) {
+    Map<Integer, Schema> allValueSchemasWithId = schemaFetcher.getAllValueSchemasWithId();
+
+    // Find the schema with the largest schema id that can parse the valueString fully
+    Optional<Object> value = allValueSchemasWithId.entrySet()
+        .stream()
+        .sorted(Collections.reverseOrder(Map.Entry.comparingByKey())) // Prefer schemas with higher schema IDs
+        .map(valueSchemaEntry -> {
+          try {
+            return adaptDataToSchema(valueString, valueSchemaEntry.getValue());
+          } catch (Exception e) {
+            exceptionMap.put(valueSchemaEntry.getKey(), e);
+          }
+          return null;
+        })
+        .filter(Objects::nonNull)
+        .findFirst();
+
+    if (!value.isPresent()) {
       String exceptionDelimiter = "\n\t";
       String exceptionDetails = exceptionMap.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
         Exception e = entry.getValue();
@@ -220,7 +232,7 @@ public class ProducerTool {
               + exceptionDelimiter + exceptionDetails);
       System.exit(1);
     }
-    return value;
+    return value.get();
   }
 
   private static Object adaptDataToSchema(String dataString, Schema dataSchema) {
@@ -245,12 +257,23 @@ public class ProducerTool {
         data = dataString;
         break;
       default:
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(dataString.getBytes());
         try {
-          data = new GenericDatumReader<>(dataSchema, dataSchema).read(
-              null,
-              AvroCompatibilityHelper.newJsonDecoder(dataSchema, new ByteArrayInputStream(dataString.getBytes())));
+          data = new GenericDatumReader<>(dataSchema, dataSchema)
+              .read(null, AvroCompatibilityHelper.newJsonDecoder(dataSchema, inputStream));
         } catch (IOException e) {
-          throw new VeniceException("Invalid input:" + dataString, e);
+          throw new VeniceException("Invalid input: " + dataString, e);
+        }
+
+        try {
+          String remainingContent = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+          if (!StringUtils.isEmpty(remainingContent)) {
+            throw new VeniceException("Input does not fully conform to the schema");
+          }
+        } catch (IOException e) {
+          throw new VeniceException(
+              "Unable to validate if input fully conforms to the schema. Considering this as a failure.",
+              e);
         }
         break;
     }
