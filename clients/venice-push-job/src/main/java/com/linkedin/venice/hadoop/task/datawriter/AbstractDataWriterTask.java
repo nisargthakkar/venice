@@ -74,7 +74,7 @@ public abstract class AbstractDataWriterTask {
    * Configures the task with the given {@link EngineTaskConfigProvider}.
    * @param engineTaskConfigProvider
    */
-  protected final void configure(EngineTaskConfigProvider engineTaskConfigProvider) {
+  public final void configure(EngineTaskConfigProvider engineTaskConfigProvider) {
     this.engineTaskConfigProvider = engineTaskConfigProvider;
     Properties jobProps = engineTaskConfigProvider.getJobProps();
     String sslConfiguratorClassName = jobProps.getProperty(SSL_CONFIGURATOR_CLASS_CONFIG);

@@ -10,7 +10,6 @@ import com.linkedin.venice.spark.datawriter.task.SparkDataWriterTaskTracker;
 import com.linkedin.venice.spark.engine.SparkEngineTaskConfigProvider;
 import com.linkedin.venice.utils.TriConsumer;
 import com.linkedin.venice.utils.VeniceProperties;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -21,9 +20,9 @@ import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
 
 /**
  * An implementation of {@link AbstractInputRecordProcessor} for Spark that processes input records from the dataframe
- * and emits an {@link Iterator} of {@link Row} with {@link DEFAULT_SCHEMA} as the schema.
+ * and emits an {@link Iterator} of {@link Row} with {@link SparkConstants#DEFAULT_SCHEMA} as the schema.
  */
-public class SparkInputRecordProcessor extends AbstractInputRecordProcessor<ByteBuffer, ByteBuffer> {
+public class SparkInputRecordProcessor extends AbstractInputRecordProcessor<Row> {
   private final DataWriterTaskTracker dataWriterTaskTracker;
 
   public SparkInputRecordProcessor(Properties jobProperties, DataWriterAccumulators accumulators) {
@@ -33,16 +32,12 @@ public class SparkInputRecordProcessor extends AbstractInputRecordProcessor<Byte
 
   public Iterator<Row> processRecord(Row record) {
     List<Row> outputRows = new ArrayList<>();
-    ByteBuffer keyBB = ByteBuffer.wrap(record.getAs(SparkConstants.KEY_COLUMN_NAME));
-    byte[] value = record.getAs(SparkConstants.VALUE_COLUMN_NAME);
-    Long timestamp = record.getAs(SparkConstants.TIMESTAMP_COLUMN_NAME);
-    ByteBuffer valueBB = value == null ? null : ByteBuffer.wrap(value);
-    super.processRecord(keyBB, valueBB, timestamp, getRecordEmitter(outputRows), dataWriterTaskTracker);
+    super.processRecord(record, getRecordEmitter(outputRows), dataWriterTaskTracker);
     return outputRows.iterator();
   }
 
   @Override
-  protected AbstractVeniceRecordReader<ByteBuffer, ByteBuffer> getRecordReader(VeniceProperties props) {
+  protected AbstractVeniceRecordReader<Row> getRecordReader(VeniceProperties props) {
     return IdentityVeniceRecordReader.getInstance();
   }
 

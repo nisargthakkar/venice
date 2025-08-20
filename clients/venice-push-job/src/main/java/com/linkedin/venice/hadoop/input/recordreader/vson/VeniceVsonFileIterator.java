@@ -38,17 +38,17 @@ public class VeniceVsonFileIterator implements VeniceRecordIterator {
 
   @Override
   public byte[] getCurrentKey() {
-    return recordReader.getKeyBytes(currentKey, currentValue);
+    return recordReader.getKeyBytes(new KeyValueBytesPair(currentKey.getBytes(), currentValue.getBytes()));
   }
 
   @Override
   public byte[] getCurrentValue() {
-    return recordReader.getValueBytes(currentKey, currentValue);
+    return recordReader.getValueBytes(new KeyValueBytesPair(currentKey.getBytes(), currentValue.getBytes()));
   }
 
   @Override
   public long getTimeStamp() {
-    return recordReader.getRecordTimestamp(currentKey, currentValue);
+    return recordReader.getRecordTimestamp(new KeyValueBytesPair(currentKey.getBytes(), currentValue.getBytes()));
   }
 
   @Override

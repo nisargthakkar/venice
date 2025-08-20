@@ -28,8 +28,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.IndexedRecord;
-import org.apache.avro.mapred.AvroWrapper;
-import org.apache.hadoop.io.NullWritable;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -61,7 +59,7 @@ public class TestVeniceAvroRecordReader {
     valueRecord.put("firstName", "FN");
     valueRecord.put("lastName", "LN");
     record.put("value", valueRecord);
-    Object result = recordReader.getAvroValue(new AvroWrapper<>(record), NullWritable.get());
+    Object result = recordReader.getAvroValue(record);
     Assert.assertTrue(result instanceof IndexedRecord);
 
     Assert.assertEquals(((IndexedRecord) result).get(updateSchema.getField("firstName").pos()), "FN");
@@ -90,8 +88,8 @@ public class TestVeniceAvroRecordReader {
     valueRecord.put("firstName", "FN");
     valueRecord.put("lastName", "LN");
     record.put("value", valueRecord);
-    Object result = recordReader.getAvroValue(new AvroWrapper<>(record), NullWritable.get());
-    Assert.assertEquals(recordReader.getRecordTimestamp(new AvroWrapper<>(record), NullWritable.get()), timestamp);
+    Object result = recordReader.getAvroValue(record);
+    Assert.assertEquals(recordReader.getRecordTimestamp(record), timestamp);
     Assert.assertTrue(result instanceof IndexedRecord);
 
     Assert.assertEquals(((IndexedRecord) result).get(updateSchema.getField("firstName").pos()), "FN");
@@ -102,7 +100,7 @@ public class TestVeniceAvroRecordReader {
 
     // Test the exceptional case
     record.put("timestamp", null);
-    Assert.assertThrows(() -> recordReader.getRecordTimestamp(new AvroWrapper<>(record), NullWritable.get()));
+    Assert.assertThrows(() -> recordReader.getRecordTimestamp(record));
   }
 
   @Test(dataProvider = "Boolean-and-EtlTransformations")
@@ -162,7 +160,7 @@ public class TestVeniceAvroRecordReader {
       }
 
       GenericRecord record = generateRandomEtlRecord(fileSchema, key, value);
-      Object extractedValue = recordReader.getAvroValue(new AvroWrapper<>(record), NullWritable.get());
+      Object extractedValue = recordReader.getAvroValue(record);
 
       Assert.assertEquals(value, extractedValue);
     }

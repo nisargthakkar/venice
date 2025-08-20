@@ -19,14 +19,13 @@ import static com.linkedin.venice.vpj.VenicePushJobConstants.VSON_PUSH;
 import com.linkedin.avroutil1.compatibility.AvroCompatibilityHelper;
 import com.linkedin.venice.hadoop.PushJobSetting;
 import com.linkedin.venice.hadoop.input.recordreader.avro.VeniceAvroRecordReader;
+import com.linkedin.venice.hadoop.input.recordreader.vson.KeyValueBytesPair;
 import com.linkedin.venice.hadoop.input.recordreader.vson.VeniceVsonRecordReader;
 import com.linkedin.venice.spark.input.hdfs.VeniceHdfsSource;
 import com.linkedin.venice.spark.utils.RowToAvroConverter;
 import com.linkedin.venice.utils.VeniceProperties;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.generic.IndexedRecord;
-import org.apache.avro.mapred.AvroWrapper;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.spark.api.java.JavaRDD;
@@ -113,10 +112,9 @@ public class DataWriterSparkJob extends AbstractDataWriterSparkJob {
           pushJobSetting.etlValueSchemaTransformation,
           updateSchema);
 
-      AvroWrapper<IndexedRecord> recordAvroWrapper = new AvroWrapper<>(rowRecord);
-      final byte[] inputKeyBytes = recordReader.getKeyBytes(recordAvroWrapper, null);
-      final byte[] inputValueBytes = recordReader.getValueBytes(recordAvroWrapper, null);
-      final Long timestamp = recordReader.getRecordTimestamp(recordAvroWrapper, null);
+      final byte[] inputKeyBytes = recordReader.getKeyBytes(rowRecord);
+      final byte[] inputValueBytes = recordReader.getValueBytes(rowRecord);
+      final Long timestamp = recordReader.getRecordTimestamp(rowRecord);
       return new GenericRowWithSchema(new Object[] { inputKeyBytes, inputValueBytes, timestamp }, DEFAULT_SCHEMA);
     }, RowEncoder.apply(DEFAULT_SCHEMA));
 
@@ -135,8 +133,9 @@ public class DataWriterSparkJob extends AbstractDataWriterSparkJob {
               pushJobSetting.keyField,
               pushJobSetting.valueField);
 
-          final byte[] inputKeyBytes = recordReader.getKeyBytes(record._1, record._2);
-          final byte[] inputValueBytes = recordReader.getValueBytes(record._1, record._2);
+          KeyValueBytesPair kvPair = new KeyValueBytesPair(record._1.copyBytes(), record._2.copyBytes());
+          final byte[] inputKeyBytes = recordReader.getKeyBytes(kvPair);
+          final byte[] inputValueBytes = recordReader.getValueBytes(kvPair);
           // timestamp isn't supported for vson
           return new GenericRowWithSchema(new Object[] { inputKeyBytes, inputValueBytes, -1L }, DEFAULT_SCHEMA);
         });

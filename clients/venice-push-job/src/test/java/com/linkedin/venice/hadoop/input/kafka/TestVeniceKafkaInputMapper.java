@@ -124,14 +124,10 @@ public class TestVeniceKafkaInputMapper extends AbstractTestVeniceMapper<VeniceK
     mapper.configureTask(any());
     int validCount = 0, filteredCount = 0;
     for (int i = 0; i < 5; i++) {
-      if (mapper.process(
-          EMPTY_KEY,
-          generateKIFRecord(),
-          -1L,
-          EMPTY_BYTE_REF,
-          EMPTY_BYTE_REF,
-          EMPTY_LONG_REF,
-          mock(DataWriterTaskTracker.class))) {
+      VeniceKafkaInputMapper.PubSubInputObject inputObject =
+          new VeniceKafkaInputMapper.PubSubInputObject(EMPTY_KEY, generateKIFRecord(), -1L);
+      if (mapper
+          .process(inputObject, EMPTY_BYTE_REF, EMPTY_BYTE_REF, EMPTY_LONG_REF, mock(DataWriterTaskTracker.class))) {
         validCount++;
       } else {
         filteredCount++;
@@ -152,7 +148,13 @@ public class TestVeniceKafkaInputMapper extends AbstractTestVeniceMapper<VeniceK
     // Trigger manually to set the dummy filterChain
     mapper.configureTask(any());
 
-    Assert.assertFalse(mapper.process(null, null, -1L, null, null, null, mock(DataWriterTaskTracker.class)));
+    Assert.assertFalse(
+        mapper.process(
+            new VeniceKafkaInputMapper.PubSubInputObject(null, null, -1L),
+            null,
+            null,
+            null,
+            mock(DataWriterTaskTracker.class)));
   }
 
   private KafkaInputMapperValue generateKIFRecord() {

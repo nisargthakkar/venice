@@ -8,25 +8,20 @@ import java.io.InputStream;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.IndexedRecord;
-import org.apache.avro.mapred.AvroWrapper;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.NullWritable;
 
 
 public class VeniceAvroFileIterator implements VeniceRecordIterator {
   private final InputStream hdfsInputStream;
   private final DataFileStream avroDataFileStream;
-  private final AbstractAvroRecordReader<AvroWrapper<IndexedRecord>, NullWritable> recordReader;
+  private final AbstractAvroRecordReader<IndexedRecord> recordReader;
 
   private byte[] currentKey = null;
   private byte[] currentValue = null;
   private long timestamp = -1L;
 
-  public VeniceAvroFileIterator(
-      FileSystem fs,
-      Path hdfsPath,
-      AbstractAvroRecordReader<AvroWrapper<IndexedRecord>, NullWritable> recordReader) {
+  public VeniceAvroFileIterator(FileSystem fs, Path hdfsPath, AbstractAvroRecordReader<IndexedRecord> recordReader) {
     if (fs != null && hdfsPath != null) {
       try {
         this.hdfsInputStream = fs.open(hdfsPath);
@@ -64,10 +59,10 @@ public class VeniceAvroFileIterator implements VeniceRecordIterator {
       return false;
     }
 
-    AvroWrapper<IndexedRecord> avroObject = new AvroWrapper<>((IndexedRecord) avroDataFileStream.next());
-    currentKey = recordReader.getKeyBytes(avroObject, null);
-    currentValue = recordReader.getValueBytes(avroObject, null);
-    timestamp = recordReader.getRecordTimestamp(avroObject, null);
+    IndexedRecord avroObject = (IndexedRecord) avroDataFileStream.next();
+    currentKey = recordReader.getKeyBytes(avroObject);
+    currentValue = recordReader.getValueBytes(avroObject);
+    timestamp = recordReader.getRecordTimestamp(avroObject);
     return true;
   }
 

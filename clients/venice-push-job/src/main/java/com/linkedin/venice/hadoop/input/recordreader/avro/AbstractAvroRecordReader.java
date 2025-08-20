@@ -18,11 +18,9 @@ import org.apache.avro.generic.IndexedRecord;
 
 /**
  * An abstraction for a record reader that reads records from input into Avro-serialized keys and values.
- * @param <INPUT_KEY> The format of the key as controlled by the input format
- * @param <INPUT_VALUE> The format of the value as controlled by the input format
+ * @param <T> The format of the input as controlled by the input format
  */
-public abstract class AbstractAvroRecordReader<INPUT_KEY, INPUT_VALUE>
-    extends AbstractVeniceRecordReader<INPUT_KEY, INPUT_VALUE> {
+public abstract class AbstractAvroRecordReader<T> extends AbstractVeniceRecordReader<T> {
   private final Schema dataSchema;
 
   private final int keyFieldPos;
@@ -129,11 +127,11 @@ public abstract class AbstractAvroRecordReader<INPUT_KEY, INPUT_VALUE>
     return dataSchema;
   }
 
-  protected abstract IndexedRecord getRecordDatum(INPUT_KEY inputKey, INPUT_VALUE inputValue);
+  protected abstract IndexedRecord getRecordDatum(T inputObj);
 
   @Override
-  public Object getAvroKey(INPUT_KEY inputKey, INPUT_VALUE inputValue) {
-    Object keyDatum = getRecordDatum(inputKey, inputValue).get(keyFieldPos);
+  public Object getAvroKey(T inputObj) {
+    Object keyDatum = getRecordDatum(inputObj).get(keyFieldPos);
 
     if (keyDatum == null) {
       // Invalid data
@@ -145,12 +143,12 @@ public abstract class AbstractAvroRecordReader<INPUT_KEY, INPUT_VALUE>
   }
 
   @Override
-  public Long getRecordTimestamp(INPUT_KEY inputKey, INPUT_VALUE inputValue) {
+  public Long getRecordTimestamp(T inputObj) {
     if (timestampFieldPos == -1) {
       return -1L;
     }
 
-    Object timestampDatum = getRecordDatum(inputKey, inputValue).get(timestampFieldPos);
+    Object timestampDatum = getRecordDatum(inputObj).get(timestampFieldPos);
     if (!(timestampDatum instanceof Long)) {
       throw new VeniceInvalidInputException(
           "Timestamp must be non null and of type long!!  Instead got:" + timestampDatum);
@@ -160,8 +158,8 @@ public abstract class AbstractAvroRecordReader<INPUT_KEY, INPUT_VALUE>
   }
 
   @Override
-  public Object getAvroValue(INPUT_KEY inputKey, INPUT_VALUE inputValue) {
-    Object valueObject = getRecordDatum(inputKey, inputValue).get(valueFieldPos);
+  public Object getAvroValue(T inputObj) {
+    Object valueObject = getRecordDatum(inputObj).get(valueFieldPos);
     if (!generatePartialUpdateRecordFromInput) {
       return valueObject;
     }

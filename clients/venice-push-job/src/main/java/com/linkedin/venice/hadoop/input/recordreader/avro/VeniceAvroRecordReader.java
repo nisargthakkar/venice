@@ -15,14 +15,12 @@ import com.linkedin.venice.schema.AvroSchemaParseUtils;
 import com.linkedin.venice.utils.VeniceProperties;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
-import org.apache.avro.mapred.AvroWrapper;
-import org.apache.hadoop.io.NullWritable;
 
 
 /**
  * A record reader that reads records from Avro file input into Avro-serialized keys and values.
  */
-public class VeniceAvroRecordReader extends AbstractAvroRecordReader<AvroWrapper<IndexedRecord>, NullWritable> {
+public class VeniceAvroRecordReader extends AbstractAvroRecordReader<IndexedRecord> {
   /**
    * This constructor is used when data is read from HDFS.
    * @param dataSchema Schema of the avro file
@@ -69,7 +67,7 @@ public class VeniceAvroRecordReader extends AbstractAvroRecordReader<AvroWrapper
   }
 
   @Override
-  protected IndexedRecord getRecordDatum(AvroWrapper<IndexedRecord> record, NullWritable nullValue) {
-    return record.datum();
+  protected IndexedRecord getRecordDatum(IndexedRecord record) {
+    return record;
   }
 }

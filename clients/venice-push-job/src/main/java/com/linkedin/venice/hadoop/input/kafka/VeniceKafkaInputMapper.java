@@ -21,16 +21,24 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * This class is designed specifically for {@link KafkaInputFormat}, and right now, it is doing simple pass-through.
  */
-public class VeniceKafkaInputMapper extends AbstractVeniceMapper<KafkaInputMapperKey, KafkaInputMapperValue> {
+public class VeniceKafkaInputMapper
+    extends AbstractVeniceMapper<KafkaInputMapperKey, KafkaInputMapperValue, VeniceKafkaInputMapper.PubSubInputObject> {
   private static final RecordSerializer KAFKA_INPUT_MAPPER_KEY_SERIALIZER =
       FastSerializerDeserializerFactory.getFastAvroGenericSerializer(KafkaInputMapperKey.SCHEMA$);
   private static final RecordSerializer KAFKA_INPUT_MAPPER_VALUE_SERIALIZER =
       FastSerializerDeserializerFactory.getFastAvroGenericSerializer(KafkaInputMapperValue.SCHEMA$);
+
   private FilterChain<KafkaInputMapperValue> veniceFilterChain;
 
   @Override
-  protected AbstractVeniceRecordReader<KafkaInputMapperKey, KafkaInputMapperValue> getRecordReader(
-      VeniceProperties props) {
+  protected PubSubInputObject convertInput(
+      KafkaInputMapperKey kafkaInputMapperKey,
+      KafkaInputMapperValue kafkaInputMapperValue) {
+    return new PubSubInputObject(kafkaInputMapperKey, kafkaInputMapperValue, -1L);
+  }
+
+  @Override
+  protected AbstractVeniceRecordReader<PubSubInputObject> getRecordReader(VeniceProperties props) {
     throw new UnsupportedOperationException();
   }
 
@@ -58,22 +66,21 @@ public class VeniceKafkaInputMapper extends AbstractVeniceMapper<KafkaInputMappe
 
   @Override
   protected boolean process(
-      KafkaInputMapperKey inputKey,
-      KafkaInputMapperValue inputValue,
-      Long timestamp,
+      PubSubInputObject inputObj,
       AtomicReference<byte[]> keyRef,
       AtomicReference<byte[]> valueRef,
       AtomicReference<Long> timestampRef,
       DataWriterTaskTracker dataWriterTaskTracker) {
+    KafkaInputMapperValue inputValue = inputObj.getValue();
     if (veniceFilterChain != null && veniceFilterChain.apply(inputValue)) {
       dataWriterTaskTracker.trackRepushTtlFilteredRecord();
       return false;
     }
-    byte[] serializedKey = KAFKA_INPUT_MAPPER_KEY_SERIALIZER.serialize(inputKey);
+    byte[] serializedKey = KAFKA_INPUT_MAPPER_KEY_SERIALIZER.serialize(inputObj.getKey());
     keyRef.set(serializedKey);
     byte[] serializedValue = KAFKA_INPUT_MAPPER_VALUE_SERIALIZER.serialize(inputValue);
     valueRef.set(serializedValue);
-    timestampRef.set(timestamp);
+    timestampRef.set(inputObj.getTimestamp());
     return true;
   }
 
@@ -81,5 +88,29 @@ public class VeniceKafkaInputMapper extends AbstractVeniceMapper<KafkaInputMappe
   public void close() {
     Utils.closeQuietlyWithErrorLogged(veniceFilterChain);
     super.close();
+  }
+
+  static class PubSubInputObject {
+    private final KafkaInputMapperKey key;
+    private final KafkaInputMapperValue value;
+    private final long timestamp;
+
+    public PubSubInputObject(KafkaInputMapperKey key, KafkaInputMapperValue value, long timestamp) {
+      this.key = key;
+      this.value = value;
+      this.timestamp = timestamp;
+    }
+
+    public KafkaInputMapperKey getKey() {
+      return key;
+    }
+
+    public KafkaInputMapperValue getValue() {
+      return value;
+    }
+
+    public long getTimestamp() {
+      return timestamp;
+    }
   }
 }

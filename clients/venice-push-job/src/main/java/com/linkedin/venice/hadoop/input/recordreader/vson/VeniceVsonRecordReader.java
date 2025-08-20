@@ -18,7 +18,6 @@ import org.apache.avro.generic.GenericData;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A record reader that reads records from VSON SequenceFile file input into Avro-serialized keys and values.
  */
-public class VeniceVsonRecordReader extends AbstractVeniceRecordReader<BytesWritable, BytesWritable> {
+public class VeniceVsonRecordReader extends AbstractVeniceRecordReader<KeyValueBytesPair> {
   private static final Logger LOGGER = LogManager.getLogger(VeniceVsonRecordReader.class);
 
   private VsonAvroSerializer keyDeserializer;
@@ -77,8 +76,9 @@ public class VeniceVsonRecordReader extends AbstractVeniceRecordReader<BytesWrit
   }
 
   @Override
-  public Object getAvroKey(BytesWritable inputKey, BytesWritable inputValue) {
-    Object avroKeyObject = keyDeserializer.bytesToAvro(inputKey.getBytes(), 0, inputKey.getLength());
+  public Object getAvroKey(KeyValueBytesPair inputObj) {
+    byte[] inputKey = inputObj.getKey();
+    Object avroKeyObject = keyDeserializer.bytesToAvro(inputKey, 0, inputKey.length);
     if (!keyField.isEmpty()) {
       return ((GenericData.Record) avroKeyObject).get(keyField);
     }
@@ -86,8 +86,9 @@ public class VeniceVsonRecordReader extends AbstractVeniceRecordReader<BytesWrit
   }
 
   @Override
-  public Object getAvroValue(BytesWritable inputKey, BytesWritable inputValue) {
-    Object avroValueObject = valueDeserializer.bytesToAvro(inputValue.getBytes(), 0, inputValue.getLength());
+  public Object getAvroValue(KeyValueBytesPair inputObj) {
+    byte[] inputValue = inputObj.getValue();
+    Object avroValueObject = valueDeserializer.bytesToAvro(inputValue, 0, inputValue.length);
     if (!valueField.isEmpty()) {
       return ((GenericData.Record) avroValueObject).get(valueField);
     }
@@ -95,7 +96,7 @@ public class VeniceVsonRecordReader extends AbstractVeniceRecordReader<BytesWrit
   }
 
   @Override
-  public Long getRecordTimestamp(BytesWritable inputKey, BytesWritable inputValue) {
+  public Long getRecordTimestamp(KeyValueBytesPair inputObj) {
     return -1L;
   }
 

@@ -8,10 +8,9 @@ import org.apache.avro.Schema;
 
 /**
  * An abstraction for a record reader that reads records from the configured input into Avro-serialized keys and values.
- * @param <INPUT_KEY> The format of the key as controlled by the input format
- * @param <INPUT_VALUE> The format of the value as controlled by the input format
+ * @param <T> The format of the input as controlled by the input format
  */
-public abstract class AbstractVeniceRecordReader<INPUT_KEY, INPUT_VALUE> {
+public abstract class AbstractVeniceRecordReader<T> {
   private Schema keySchema;
   private Schema valueSchema;
 
@@ -39,24 +38,24 @@ public abstract class AbstractVeniceRecordReader<INPUT_KEY, INPUT_VALUE> {
   /**
    * Return an Avro output key
    */
-  public abstract Object getAvroKey(INPUT_KEY inputKey, INPUT_VALUE inputValue);
+  public abstract Object getAvroKey(T inputObj);
 
   /**
    * return an Avro output value
    */
-  public abstract Object getAvroValue(INPUT_KEY inputKey, INPUT_VALUE inputValue);
+  public abstract Object getAvroValue(T inputObj);
 
-  public abstract Long getRecordTimestamp(INPUT_KEY inputKey, INPUT_VALUE inputValue);
+  public abstract Long getRecordTimestamp(T inputObj);
 
   /**
    * Return a serialized output key
    */
-  public byte[] getKeyBytes(INPUT_KEY inputKey, INPUT_VALUE inputValue) {
+  public byte[] getKeyBytes(T inputObj) {
     if (keySerializer == null) {
       throw new VeniceException("Record reader must be configured before calling getKeyBytes");
     }
 
-    Object avroKey = getAvroKey(inputKey, inputValue);
+    Object avroKey = getAvroKey(inputObj);
 
     if (avroKey == null) {
       return null;
@@ -68,12 +67,12 @@ public abstract class AbstractVeniceRecordReader<INPUT_KEY, INPUT_VALUE> {
   /**
    * Return a serialized output value
    */
-  public byte[] getValueBytes(INPUT_KEY inputKey, INPUT_VALUE inputValue) {
+  public byte[] getValueBytes(T inputObj) {
     if (valueSerializer == null) {
       throw new VeniceException("Record reader must be configured before calling getValueBytes");
     }
 
-    Object avroValue = getAvroValue(inputKey, inputValue);
+    Object avroValue = getAvroValue(inputObj);
 
     if (avroValue == null) {
       return null;

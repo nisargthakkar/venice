@@ -37,12 +37,10 @@ import org.apache.logging.log4j.Logger;
  * An abstraction of the task that processes each record from the input, and returns serialized, and potentially
  * compressed, Avro key/value pairs.
  *
- * @param <INPUT_KEY> type of the input key read from InputFormat
- * @param <INPUT_VALUE> type of the input value read from InputFormat
+ * @param <T> type of the input read from InputFormat
  */
 
-public abstract class AbstractInputRecordProcessor<INPUT_KEY, INPUT_VALUE> extends AbstractDataWriterTask
-    implements Closeable {
+public abstract class AbstractInputRecordProcessor<T> extends AbstractDataWriterTask implements Closeable {
   private static final Logger LOGGER = LogManager.getLogger(AbstractInputRecordProcessor.class);
   private static final int TASK_ID_WHICH_SHOULD_SPRAY_ALL_PARTITIONS = 0;
 
@@ -52,7 +50,7 @@ public abstract class AbstractInputRecordProcessor<INPUT_KEY, INPUT_VALUE> exten
   private CompressorFactory compressorFactory;
   private VeniceCompressor[] compressors;
 
-  protected AbstractVeniceRecordReader<INPUT_KEY, INPUT_VALUE> veniceRecordReader;
+  protected AbstractVeniceRecordReader<T> veniceRecordReader;
   private static final byte[] EMPTY_BYTES = new byte[0];
   private final AtomicReference<byte[]> processedKey = new AtomicReference<>();
   private final AtomicReference<byte[]> processedValue = new AtomicReference<>();
@@ -61,24 +59,15 @@ public abstract class AbstractInputRecordProcessor<INPUT_KEY, INPUT_VALUE> exten
   private boolean enableUncompressedMaxRecordSizeLimit = false;
   private int maxRecordSizeBytes = VeniceWriter.UNLIMITED_MAX_RECORD_SIZE;
 
-  protected final void processRecord(
-      INPUT_KEY inputKey,
-      INPUT_VALUE inputValue,
-      Long timestamp,
+  public final void processRecord(
+      T inputObj,
       TriConsumer<byte[], byte[], Long> recordEmitter,
       DataWriterTaskTracker dataWriterTaskTracker) {
     if (firstRecord) {
       maybeSprayAllPartitions(recordEmitter, dataWriterTaskTracker);
     }
     firstRecord = false;
-    if (process(
-        inputKey,
-        inputValue,
-        timestamp,
-        processedKey,
-        processedValue,
-        processedTimestamp,
-        dataWriterTaskTracker)) {
+    if (process(inputObj, processedKey, processedValue, processedTimestamp, dataWriterTaskTracker)) {
       // key/value pair is valid.
       recordEmitter.accept(processedKey.get(), processedValue.get(), processedTimestamp.get());
     }
@@ -123,16 +112,14 @@ public abstract class AbstractInputRecordProcessor<INPUT_KEY, INPUT_VALUE> exten
    * in {@link AbstractPartitionWriter#processValuesForKey(byte[], Iterator, Iterator, DataWriterTaskTracker)}.
    */
   protected boolean process(
-      INPUT_KEY inputKey,
-      INPUT_VALUE inputValue,
-      Long timestamp,
+      T inputObj,
       AtomicReference<byte[]> keyRef,
       AtomicReference<byte[]> valueRef,
       AtomicReference<Long> timestampRef,
       DataWriterTaskTracker dataWriterTaskTracker) {
-    byte[] recordKey = veniceRecordReader.getKeyBytes(inputKey, inputValue);
-    byte[] recordValue = veniceRecordReader.getValueBytes(inputKey, inputValue);
-    Long recordTimestamp = timestamp;
+    byte[] recordKey = veniceRecordReader.getKeyBytes(inputObj);
+    byte[] recordValue = veniceRecordReader.getValueBytes(inputObj);
+    Long recordTimestamp = veniceRecordReader.getRecordTimestamp(inputObj);
     if (recordKey == null) {
       throw new VeniceException("Mapper received a empty key record");
     }
@@ -215,7 +202,7 @@ public abstract class AbstractInputRecordProcessor<INPUT_KEY, INPUT_VALUE> exten
   /**
    * A method for child classes to setup {@link AbstractInputRecordProcessor#veniceRecordReader}.
    */
-  protected abstract AbstractVeniceRecordReader<INPUT_KEY, INPUT_VALUE> getRecordReader(VeniceProperties props);
+  protected abstract AbstractVeniceRecordReader<T> getRecordReader(VeniceProperties props);
 
   @Override
   protected void configureTask(VeniceProperties props) {

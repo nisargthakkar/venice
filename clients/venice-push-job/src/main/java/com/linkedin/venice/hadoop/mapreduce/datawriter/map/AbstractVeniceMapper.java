@@ -22,8 +22,7 @@ import org.apache.hadoop.mapred.Reporter;
  * @param <INPUT_VALUE> type of the input value read from InputFormat
  */
 
-public abstract class AbstractVeniceMapper<INPUT_KEY, INPUT_VALUE>
-    extends AbstractInputRecordProcessor<INPUT_KEY, INPUT_VALUE>
+public abstract class AbstractVeniceMapper<INPUT_KEY, INPUT_VALUE, T> extends AbstractInputRecordProcessor<T>
     implements Mapper<INPUT_KEY, INPUT_VALUE, BytesWritable, BytesWritable> {
   private Reporter reporter = null;
   private DataWriterTaskTracker dataWriterTaskTracker = null;
@@ -37,7 +36,7 @@ public abstract class AbstractVeniceMapper<INPUT_KEY, INPUT_VALUE>
     if (updatePreviousReporter(reporter)) {
       dataWriterTaskTracker = new ReporterBackedMapReduceDataWriterTaskTracker(reporter);
     }
-    super.processRecord(inputKey, inputValue, -1L, getRecordEmitter(output), dataWriterTaskTracker);
+    super.processRecord(convertInput(inputKey, inputValue), getRecordEmitter(output), dataWriterTaskTracker);
   }
 
   private boolean updatePreviousReporter(Reporter reporter) {
@@ -76,4 +75,6 @@ public abstract class AbstractVeniceMapper<INPUT_KEY, INPUT_VALUE>
       }
     };
   }
+
+  protected abstract T convertInput(INPUT_KEY inputKey, INPUT_VALUE inputValue);
 }
