@@ -109,8 +109,6 @@ public class ControllerRoutes extends AbstractRoute {
 
         if (admin.isParent()) {
           veniceResponse.setChildDataCenterControllerUrlMap(admin.getChildDataCenterControllerUrlMap(clusterName));
-          veniceResponse.setChildDataCenterControllerD2Map(admin.getChildDataCenterControllerD2Map(clusterName));
-          veniceResponse.setD2ServiceName(admin.getChildControllerD2ServiceName(clusterName));
         }
       }
     };

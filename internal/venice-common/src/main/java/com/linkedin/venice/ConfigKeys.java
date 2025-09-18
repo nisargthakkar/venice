@@ -1439,20 +1439,10 @@ public class ConfigKeys {
   public static final String CHILD_CLUSTER_URL_PREFIX = "child.cluster.url.";
 
   /**
-   * Similar to {@link ConfigKeys#CHILD_CLUSTER_URL_PREFIX} but with D2 ZK url.
-   */
-  public static final String CHILD_CLUSTER_D2_PREFIX = "child.cluster.d2.zkHost.";
-
-  /**
    * Config prefix for Kafka bootstrap url in all child fabrics; parent controllers need to know the
    * Kafka url in all fabrics for native replication.
    */
   public static final String CHILD_DATA_CENTER_KAFKA_URL_PREFIX = "child.data.center.kafka.url";
-
-  /**
-   * D2 Service name for the child controllers in local datacenter
-   */
-  public static final String CHILD_CLUSTER_D2_SERVICE_NAME = "child.cluster.d2.service.name";
 
   /**
    * D2 Service name for cluster discovery

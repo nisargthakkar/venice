@@ -787,18 +787,6 @@ public interface Admin extends AutoCloseable, Closeable {
   Map<String, String> getChildDataCenterControllerUrlMap(String clusterName);
 
   /**
-   * Get child datacenter to child controller d2 zk host mapping
-   * @return A map of child datacenter -> child controller d2 zk host
-   */
-  Map<String, String> getChildDataCenterControllerD2Map(String clusterName);
-
-  /**
-   * Get child datacenter controller d2 service name
-   * @return d2 service name
-   */
-  String getChildControllerD2ServiceName(String clusterName);
-
-  /**
    * Return a shared store config repository.
    */
   HelixReadOnlyStoreConfigRepository getStoreConfigRepo();

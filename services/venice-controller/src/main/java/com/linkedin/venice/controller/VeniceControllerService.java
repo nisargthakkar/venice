@@ -150,8 +150,6 @@ public class VeniceControllerService extends AbstractVeniceService {
     newSchemaEncountered = (schemaId, schema) -> {
       LOGGER.info("Encountered a new KME value schema (id = {}), proceed to register", schemaId);
       try {
-        Optional<D2Client> regionD2Client =
-            Optional.ofNullable(d2Clients == null ? null : d2Clients.get(systemStoreClusterConfig.getRegionName()));
         ControllerClientBackedSystemSchemaInitializer schemaInitializer =
             new ControllerClientBackedSystemSchemaInitializer(
                 AvroProtocolDefinition.KAFKA_MESSAGE_ENVELOPE,
@@ -160,11 +158,7 @@ public class VeniceControllerService extends AbstractVeniceService {
                 null,
                 false,
                 ((VeniceHelixAdmin) admin).getSslFactory(),
-                systemStoreClusterConfig.getChildControllerUrl(systemStoreClusterConfig.getRegionName()),
-                systemStoreClusterConfig.getChildControllerD2ServiceName(),
-                regionD2Client,
-                systemStoreClusterConfig.getChildControllerD2ZkHost(systemStoreClusterConfig.getRegionName()),
-                systemStoreClusterConfig.isControllerEnforceSSLOnly());
+                systemStoreClusterConfig.getChildControllerUrl(systemStoreClusterConfig.getRegionName()));
 
         schemaInitializer.execute(Collections.singletonMap(schemaId, schema));
       } catch (VeniceException e) {

@@ -17,6 +17,7 @@ import static com.linkedin.venice.ConfigKeys.GRPC_SERVER_WORKER_THREAD_COUNT;
 import static com.linkedin.venice.ConfigKeys.KAFKA_READ_CYCLE_DELAY_MS;
 import static com.linkedin.venice.ConfigKeys.LISTENER_PORT;
 import static com.linkedin.venice.ConfigKeys.LOCAL_CONTROLLER_D2_SERVICE_NAME;
+import static com.linkedin.venice.ConfigKeys.LOCAL_CONTROLLER_URL;
 import static com.linkedin.venice.ConfigKeys.LOCAL_D2_ZK_HOST;
 import static com.linkedin.venice.ConfigKeys.LOCAL_REGION_NAME;
 import static com.linkedin.venice.ConfigKeys.MAX_ONLINE_OFFLINE_STATE_TRANSITION_THREAD_NUMBER;
@@ -116,6 +117,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
   private final SSLFactory sslFactory;
   private final File dataDirectory;
   private String regionName;
+  private final String localZkAddress;
   private final String serverD2ServiceName;
 
   /**
@@ -144,6 +146,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
       ClientConfig consumerClientConfig,
       SSLFactory sslFactory,
       String regionName,
+      String localZkAddress,
       String serverD2ServiceName) {
     super(serviceName, dataDirectory);
     this.dataDirectory = dataDirectory;
@@ -153,6 +156,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
     this.consumerClientConfig = consumerClientConfig;
     this.sslFactory = sslFactory;
     this.regionName = Objects.requireNonNull(regionName, "Region name cannot be null for VeniceServerWrapper");
+    this.localZkAddress = localZkAddress;
     this.serverD2ServiceName = serverD2ServiceName;
   }
 
@@ -173,6 +177,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
       boolean isAutoJoin,
       String serverName,
       String regionName,
+      String localZkAddress,
       String serverD2ServiceName) {
     this(
         serviceName,
@@ -183,6 +188,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
         consumerClientConfig,
         sslFactory,
         regionName,
+        localZkAddress,
         serverD2ServiceName);
     this.forkServer = forkServer;
     this.clusterName = clusterName;
@@ -203,6 +209,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
       String clusterName,
       String zkAddress,
       String veniceZkBasePath,
+      String controllerUrl,
       PubSubBrokerWrapper pubSubBrokerWrapper,
       Properties featureProperties,
       Properties configProperties,
@@ -262,6 +269,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
           .put(SERVER_SSL_HANDSHAKE_THREAD_POOL_SIZE, 10)
           .put(SYSTEM_SCHEMA_INITIALIZATION_AT_START_TIME_ENABLED, true)
           .put(SERVER_SOURCE_TOPIC_OFFSET_CHECK_INTERVAL_MS, 100)
+          .put(LOCAL_CONTROLLER_URL, controllerUrl)
           .put(LOCAL_CONTROLLER_D2_SERVICE_NAME, VeniceControllerWrapper.D2_SERVICE_NAME)
           .put(LOCAL_D2_ZK_HOST, zkAddress)
           .put(
@@ -375,6 +383,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
             consumerClientConfig,
             sslFactory,
             regionName,
+            zkAddress,
             serverD2ServiceName);
       } else {
         return new VeniceServerWrapper(
@@ -394,6 +403,7 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
             isAutoJoin,
             serverName,
             regionName,
+            zkAddress,
             serverD2ServiceName);
       }
     };
@@ -512,19 +522,18 @@ public class VeniceServerWrapper extends ProcessWrapper implements MetricsAware 
       return; // nothing to be done in forked mode.
     }
 
-    String zkAddress = serverProps.getString(LOCAL_D2_ZK_HOST);
     boolean https = serverProps.getBoolean(SERVER_HTTP2_INBOUND_ENABLED, false);
     int listenPort = serverProps.getInt(LISTENER_PORT);
     String httpURI = "http://localhost:" + listenPort;
     String httpsURI = "https://localhost:" + listenPort;
-    String d2ClusterName = D2TestUtils.setupD2Config(zkAddress, https, serverD2ServiceName);
+    String d2ClusterName = D2TestUtils.setupD2Config(localZkAddress, https, serverD2ServiceName);
     List<ServiceDiscoveryAnnouncer> d2Servers =
-        new ArrayList<>(D2TestUtils.getD2Servers(zkAddress, d2ClusterName, httpURI, httpsURI));
+        new ArrayList<>(D2TestUtils.getD2Servers(localZkAddress, d2ClusterName, httpURI, httpsURI));
 
     this.veniceServer = new TestVeniceServer(
         new VeniceServerContext.Builder().setVeniceConfigLoader(config)
             .setMetricsRepository(MetricsRepositoryUtils.createSingleThreadedMetricsRepository())
-            .setD2Client(D2TestUtils.getAndStartD2Client(zkAddress))
+            .setD2Client(D2TestUtils.getAndStartD2Client(localZkAddress))
             .setSslFactory(sslFactory)
             .setClientConfigForConsumer(consumerClientConfig)
             .setServiceDiscoveryAnnouncers(d2Servers)

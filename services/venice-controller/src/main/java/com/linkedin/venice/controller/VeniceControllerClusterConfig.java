@@ -17,8 +17,6 @@ import static com.linkedin.venice.ConfigKeys.ADMIN_TOPIC_SOURCE_REGION;
 import static com.linkedin.venice.ConfigKeys.AGGREGATE_REAL_TIME_SOURCE_REGION;
 import static com.linkedin.venice.ConfigKeys.ALLOW_CLUSTER_WIPE;
 import static com.linkedin.venice.ConfigKeys.CHILD_CLUSTER_ALLOWLIST;
-import static com.linkedin.venice.ConfigKeys.CHILD_CLUSTER_D2_PREFIX;
-import static com.linkedin.venice.ConfigKeys.CHILD_CLUSTER_D2_SERVICE_NAME;
 import static com.linkedin.venice.ConfigKeys.CHILD_CLUSTER_URL_PREFIX;
 import static com.linkedin.venice.ConfigKeys.CHILD_CLUSTER_WHITELIST;
 import static com.linkedin.venice.ConfigKeys.CHILD_DATA_CENTER_KAFKA_URL_PREFIX;
@@ -285,9 +283,7 @@ public class VeniceControllerClusterConfig {
   private final boolean parent;
   private final ParentControllerRegionState parentControllerRegionState;
   private final Map<String, String> childDataCenterControllerUrlMap;
-  private final String d2ServiceName;
   private final String clusterDiscoveryD2ServiceName;
-  private final Map<String, String> childDataCenterControllerD2Map;
   private final int parentControllerWaitingTimeForConsumptionMs;
   private final String batchJobHeartbeatStoreCluster;// Name of cluster where the batch job liveness heartbeat store
                                                      // should exist.
@@ -803,10 +799,8 @@ public class VeniceControllerClusterConfig {
 
     if (childDatacenters.isEmpty()) {
       this.childDataCenterControllerUrlMap = Collections.emptyMap();
-      this.childDataCenterControllerD2Map = Collections.emptyMap();
     } else {
       this.childDataCenterControllerUrlMap = parseClusterMap(props, childDatacenters);
-      this.childDataCenterControllerD2Map = parseClusterMap(props, childDatacenters, true);
     }
 
     Set<String> nativeReplicationSourceFabricAllowlist = Utils.parseCommaSeparatedStringToSet(
@@ -816,10 +810,8 @@ public class VeniceControllerClusterConfig {
             NATIVE_REPLICATION_FABRIC_WHITELIST,
             null));
 
-    this.d2ServiceName =
-        childDataCenterControllerD2Map.isEmpty() ? null : props.getString(CHILD_CLUSTER_D2_SERVICE_NAME);
     if (this.parent) {
-      if (childDataCenterControllerUrlMap.isEmpty() && childDataCenterControllerD2Map.isEmpty()) {
+      if (childDataCenterControllerUrlMap.isEmpty()) {
         throw new VeniceException("child controller list can not be empty");
       }
       this.parentFabrics =
@@ -1562,10 +1554,6 @@ public class VeniceControllerClusterConfig {
     return childDataCenterControllerUrlMap;
   }
 
-  public String getD2ServiceName() {
-    return d2ServiceName;
-  }
-
   public String getClusterDiscoveryD2ServiceName() {
     return clusterDiscoveryD2ServiceName;
   }
@@ -1584,10 +1572,6 @@ public class VeniceControllerClusterConfig {
 
   public boolean useDaVinciSpecificExecutionStatusForError() {
     return useDaVinciSpecificExecutionStatusForError;
-  }
-
-  public Map<String, String> getChildDataCenterControllerD2Map() {
-    return childDataCenterControllerD2Map;
   }
 
   public Map<String, String> getChildDataCenterKafkaUrlMap() {
@@ -1636,10 +1620,6 @@ public class VeniceControllerClusterConfig {
 
   public int getAdminConsumptionMaxWorkerThreadPoolSize() {
     return adminConsumptionMaxWorkerThreadPoolSize;
-  }
-
-  static Map<String, String> parseClusterMap(VeniceProperties clusterPros, Set<String> datacenterAllowlist) {
-    return parseClusterMap(clusterPros, datacenterAllowlist, false);
   }
 
   public double getStorageEngineOverheadRatio() {
@@ -1853,14 +1833,6 @@ public class VeniceControllerClusterConfig {
     return getProps().getString(CHILD_CLUSTER_URL_PREFIX + fabric, "");
   }
 
-  public String getChildControllerD2ServiceName() {
-    return getProps().getString(CHILD_CLUSTER_D2_SERVICE_NAME, "");
-  }
-
-  public String getChildControllerD2ZkHost(String fabric) {
-    return getProps().getString(CHILD_CLUSTER_D2_PREFIX + fabric, "");
-  }
-
   public boolean isClusterWipeAllowed() {
     return allowClusterWipe;
   }
@@ -2022,29 +1994,19 @@ public class VeniceControllerClusterConfig {
    *
    * @param clusterPros list of child controller uris.
    * @param datacenterAllowlist data centers that are taken into account.
-   * @param D2Routing whether it uses D2 to route or not.
    */
-  static Map<String, String> parseClusterMap(
-      VeniceProperties clusterPros,
-      Set<String> datacenterAllowlist,
-      Boolean D2Routing) {
-    String propsPrefix = D2Routing ? CHILD_CLUSTER_D2_PREFIX : CHILD_CLUSTER_URL_PREFIX;
+  static Map<String, String> parseClusterMap(VeniceProperties clusterPros, Set<String> datacenterAllowlist) {
+    String propsPrefix = CHILD_CLUSTER_URL_PREFIX;
     return parseChildDataCenterToValue(propsPrefix, clusterPros, datacenterAllowlist, (m, k, v, errMsg) -> {
       m.computeIfAbsent(k, key -> {
         String[] uriList = v.split(LIST_SEPARATOR);
 
-        if (D2Routing && uriList.length != 1) {
-          throw new VeniceException(errMsg + ": can only have 1 zookeeper url");
+        if (uriList.length == 0) {
+          throw new VeniceException(errMsg + ": urls can not be empty");
         }
 
-        if (!D2Routing) {
-          if (uriList.length == 0) {
-            throw new VeniceException(errMsg + ": urls can not be empty");
-          }
-
-          if (Arrays.stream(uriList).anyMatch(uri -> (!uri.startsWith("http://") && !uri.startsWith("https://")))) {
-            throw new VeniceException(errMsg + ": urls must begin with http:// or https://");
-          }
+        if (Arrays.stream(uriList).anyMatch(uri -> (!uri.startsWith("http://") && !uri.startsWith("https://")))) {
+          throw new VeniceException(errMsg + ": urls must begin with http:// or https://");
         }
 
         return v;

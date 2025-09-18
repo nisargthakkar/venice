@@ -178,7 +178,7 @@ public class ServiceFactory {
   }
 
   /**
-   * @deprecated Future use should use {@link #getVeniceServer(String, String, PubSubBrokerWrapper, String, String, Properties, Properties, boolean, String, Map, String)}
+   * @deprecated Future use should use {@link #getVeniceServer(String, String, PubSubBrokerWrapper, String, String, String, Properties, Properties, boolean, String, Map, String)}
    * to have the correct kafka cluster map in multi-fabric environment for essential features like A/A and heartbeat to work.
    */
   public static VeniceServerWrapper getVeniceServer(
@@ -187,6 +187,7 @@ public class ServiceFactory {
       PubSubBrokerWrapper pubSubBrokerWrapper,
       String zkAddress,
       String veniceZkBasePath,
+      String localControllerUrl,
       Properties featureProperties,
       Properties configProperties,
       String serverD2ServiceName) {
@@ -196,6 +197,7 @@ public class ServiceFactory {
         pubSubBrokerWrapper,
         zkAddress,
         veniceZkBasePath,
+        localControllerUrl,
         featureProperties,
         configProperties,
         false,
@@ -210,6 +212,7 @@ public class ServiceFactory {
       PubSubBrokerWrapper pubSubBrokerWrapper,
       String zkAddress,
       String veniceZkBasePath,
+      String localControllerUrl,
       Properties featureProperties,
       Properties configProperties,
       boolean forkServer,
@@ -224,6 +227,7 @@ public class ServiceFactory {
             regionName,
             clusterName,
             zkAddress,
+            localControllerUrl,
             veniceZkBasePath,
             pubSubBrokerWrapper,
             featureProperties,

@@ -172,7 +172,6 @@ import com.linkedin.venice.controller.util.ParentControllerConfigUpdateUtils;
 import com.linkedin.venice.controllerapi.AdminCommandExecution;
 import com.linkedin.venice.controllerapi.ControllerClient;
 import com.linkedin.venice.controllerapi.ControllerResponse;
-import com.linkedin.venice.controllerapi.D2ControllerClient;
 import com.linkedin.venice.controllerapi.JobStatusQueryResponse;
 import com.linkedin.venice.controllerapi.MultiSchemaResponse;
 import com.linkedin.venice.controllerapi.MultiStoreInfoResponse;
@@ -2091,9 +2090,7 @@ public class VeniceParentHelixAdmin implements Admin {
       }
       return RepushInfo.createRepushInfo(
           response.getStore().getVersion(response.getStore().getCurrentVersion()).get(),
-          response.getStore().getKafkaBrokerUrl(),
-          systemSchemaClusterConfig.getClusterToD2Map().get(systemSchemaClusterName),
-          systemSchemaClusterConfig.getChildControllerD2ZkHost(fabricName.get()));
+          response.getStore().getKafkaBrokerUrl());
     }
     // fabricName not present, get the largest version info among the child colos.
     Map<String, Integer> currentVersionsMap =
@@ -2114,9 +2111,7 @@ public class VeniceParentHelixAdmin implements Admin {
     }
     return RepushInfo.createRepushInfo(
         response.getStore().getVersion((response.getStore().getCurrentVersion())).get(),
-        response.getStore().getKafkaBrokerUrl(),
-        systemSchemaClusterConfig.getClusterToD2Map().get(systemSchemaClusterName),
-        systemSchemaClusterConfig.getChildControllerD2ZkHost(colo));
+        response.getStore().getKafkaBrokerUrl());
   }
 
   /**
@@ -5658,22 +5653,6 @@ public class VeniceParentHelixAdmin implements Admin {
   }
 
   /**
-   * @see Admin#getChildDataCenterControllerD2Map(String)
-   */
-  @Override
-  public Map<String, String> getChildDataCenterControllerD2Map(String clusterName) {
-    return getVeniceHelixAdmin().getChildDataCenterControllerD2Map(clusterName);
-  }
-
-  /**
-   * @see Admin#getChildControllerD2ServiceName(String)
-   */
-  @Override
-  public String getChildControllerD2ServiceName(String clusterName) {
-    return getVeniceHelixAdmin().getChildControllerD2ServiceName(clusterName);
-  }
-
-  /**
    * @see Admin#getStoreConfigRepo()
    */
   @Override
@@ -6047,17 +6026,6 @@ public class VeniceParentHelixAdmin implements Admin {
         newFabricControllerClientMap.computeIfAbsent(clusterName, cn -> new VeniceConcurrentHashMap<>())
             .computeIfAbsent(fabric, f -> {
               VeniceControllerClusterConfig controllerConfig = multiClusterConfigs.getControllerConfig(clusterName);
-              String d2ZkHost = controllerConfig.getChildControllerD2ZkHost(fabric);
-              String d2ServiceName = controllerConfig.getD2ServiceName();
-              if (StringUtils.isNotBlank(d2ZkHost) && StringUtils.isNotBlank(d2ServiceName)) {
-                if (veniceHelixAdmin.getD2Clients() != null) {
-                  return new D2ControllerClient(
-                      d2ServiceName,
-                      clusterName,
-                      veniceHelixAdmin.getD2Clients().get(fabric));
-                }
-                return new D2ControllerClient(d2ServiceName, clusterName, d2ZkHost, sslFactory);
-              }
               String url = controllerConfig.getChildControllerUrl(fabric);
               if (StringUtils.isNotBlank(url)) {
                 return ControllerClient.constructClusterControllerClient(clusterName, url, sslFactory);

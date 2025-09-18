@@ -152,11 +152,7 @@ public class ControllerClientBackedSystemSchemaInitializerTest {
               null,
               false,
               Optional.empty(),
-              "",
-              "",
-              Optional.empty(),
-              "",
-              false)) {
+              "")) {
         if (protocol == AvroProtocolDefinition.KAFKA_MESSAGE_ENVELOPE) {
           Assert.assertEquals(
               initializer.determineSchemaCompatabilityType(),

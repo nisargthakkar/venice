@@ -81,7 +81,6 @@ import com.linkedin.venice.controllerapi.AdminOperationProtocolVersionController
 import com.linkedin.venice.controllerapi.ControllerClient;
 import com.linkedin.venice.controllerapi.ControllerResponse;
 import com.linkedin.venice.controllerapi.ControllerRoute;
-import com.linkedin.venice.controllerapi.D2ControllerClient;
 import com.linkedin.venice.controllerapi.NewStoreResponse;
 import com.linkedin.venice.controllerapi.NodeReplicasReadinessState;
 import com.linkedin.venice.controllerapi.RepushInfo;
@@ -1956,31 +1955,6 @@ public class VeniceHelixAdmin implements Admin, StoreCleaner {
               entry -> controllerClients.put(
                   entry.getKey(),
                   ControllerClient.constructClusterControllerClient(clusterName, entry.getValue(), sslFactory)));
-
-      controllerConfig.getChildDataCenterControllerD2Map()
-          .entrySet()
-          .forEach(
-              entry -> controllerClients.put(
-                  entry.getKey(),
-                  new D2ControllerClient(
-                      controllerConfig.getD2ServiceName(),
-                      clusterName,
-                      entry.getValue(),
-                      sslFactory)));
-
-      // Respect d2Clients from controller constructor
-      if (d2Clients != null) {
-        controllerConfig.getChildDataCenterControllerD2Map()
-            .entrySet()
-            .forEach(
-                entry -> controllerClients.put(
-                    entry.getKey(),
-                    new D2ControllerClient(
-                        controllerConfig.getD2ServiceName(),
-                        clusterName,
-                        d2Clients.get(entry.getKey()),
-                        sslFactory)));
-      }
 
       return controllerClients;
     });
@@ -3900,18 +3874,9 @@ public class VeniceHelixAdmin implements Admin, StoreCleaner {
   public RepushInfo getRepushInfo(String clusterName, String storeName, Optional<String> fabricName) {
     Store store = getStore(clusterName, storeName);
     boolean isSSL = isSSLEnabledForPush(clusterName, storeName);
-    String systemSchemaClusterName = multiClusterConfigs.getSystemSchemaClusterName();
-    VeniceControllerClusterConfig systemSchemaClusterConfig =
-        multiClusterConfigs.getControllerConfig(systemSchemaClusterName);
-    String systemSchemaClusterD2Service = systemSchemaClusterConfig.getClusterToD2Map().get(systemSchemaClusterName);
-    String systemSchemaClusterD2ZkHost = systemSchemaClusterConfig.getChildControllerD2ZkHost(getRegionName());
     int currentVersionNumber = store.getCurrentVersion();
     Version version = store.getVersionOrThrow(currentVersionNumber);
-    return RepushInfo.createRepushInfo(
-        version,
-        getKafkaBootstrapServers(isSSL),
-        systemSchemaClusterD2Service,
-        systemSchemaClusterD2ZkHost);
+    return RepushInfo.createRepushInfo(version, getKafkaBootstrapServers(isSSL));
   }
 
   /**
@@ -8983,22 +8948,6 @@ public class VeniceHelixAdmin implements Admin, StoreCleaner {
      * if this is a child controller.
      */
     return multiClusterConfigs.getControllerConfig(clusterName).getChildDataCenterControllerUrlMap();
-  }
-
-  /**
-   * @see Admin#getChildDataCenterControllerD2Map(String)
-   */
-  @Override
-  public Map<String, String> getChildDataCenterControllerD2Map(String clusterName) {
-    return multiClusterConfigs.getControllerConfig(clusterName).getChildDataCenterControllerD2Map();
-  }
-
-  /**
-   * @see Admin#getChildControllerD2ServiceName(String)
-   */
-  @Override
-  public String getChildControllerD2ServiceName(String clusterName) {
-    return multiClusterConfigs.getControllerConfig(clusterName).getD2ServiceName();
   }
 
   /**

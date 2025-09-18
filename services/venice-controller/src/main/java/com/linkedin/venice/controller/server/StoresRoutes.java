@@ -343,7 +343,6 @@ public class StoresRoutes extends AbstractRoute {
         veniceResponse.setName(storeName);
 
         RepushInfo repushInfo = admin.getRepushInfo(clusterName, storeName, Optional.ofNullable(fabricName));
-
         veniceResponse.setRepushInfo(repushInfo);
       }
     };

@@ -97,16 +97,6 @@ public class TestVeniceControllerClusterConfig {
   }
 
   @Test
-  public void canParseD2ClusterMap() {
-    PropertyBuilder builder = new PropertyBuilder();
-    builder.put("child.cluster.d2.zkHost.dc1", "zkAddress1").put("child.cluster.d2.zkHost.dc2", "zkAddress2");
-
-    Map<String, String> map = VeniceControllerClusterConfig.parseClusterMap(builder.build(), REGION_ALLOW_LIST, true);
-    assertEquals(map.get("dc1").split(DELIMITER).length, 1);
-    assertEquals(map.get("dc2").split(DELIMITER)[0], "zkAddress2");
-  }
-
-  @Test
   public void canParseBannedPaths() {
     PropertyBuilder builder = new PropertyBuilder();
     // Add some stuff. why not

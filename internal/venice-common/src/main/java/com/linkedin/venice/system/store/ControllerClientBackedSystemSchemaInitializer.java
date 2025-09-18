@@ -68,6 +68,28 @@ public class ControllerClientBackedSystemSchemaInitializer implements Closeable 
       UpdateStoreQueryParams storeMetadataUpdate,
       boolean autoRegisterPartialUpdateSchema,
       Optional<SSLFactory> sslFactory,
+      String controllerUrl) {
+    this(
+        protocolDefinition,
+        systemStoreCluster,
+        keySchema,
+        storeMetadataUpdate,
+        autoRegisterPartialUpdateSchema,
+        sslFactory,
+        controllerUrl,
+        "",
+        Optional.empty(),
+        "",
+        false);
+  }
+
+  public ControllerClientBackedSystemSchemaInitializer(
+      AvroProtocolDefinition protocolDefinition,
+      String systemStoreCluster,
+      Schema keySchema,
+      UpdateStoreQueryParams storeMetadataUpdate,
+      boolean autoRegisterPartialUpdateSchema,
+      Optional<SSLFactory> sslFactory,
       String controllerUrl,
       String controllerD2ServiceName,
       Optional<D2Client> d2Client,

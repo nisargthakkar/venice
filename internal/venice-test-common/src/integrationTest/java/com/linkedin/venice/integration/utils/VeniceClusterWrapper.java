@@ -284,6 +284,10 @@ public class VeniceClusterWrapper extends ProcessWrapper {
         veniceControllerWrappers.put(veniceControllerWrapper.getPort(), veniceControllerWrapper);
       }
 
+      Set<Integer> controllerPorts = veniceControllerWrappers.keySet();
+      String controllerUrls =
+          controllerPorts.stream().map(port -> "http://localhost:" + port).collect(Collectors.joining(","));
+
       for (int i = 0; i < options.getNumberOfRouters(); i++) {
         VeniceRouterWrapper veniceRouterWrapper = ServiceFactory.getVeniceRouter(
             options.getRegionName(),
@@ -333,6 +337,7 @@ public class VeniceClusterWrapper extends ProcessWrapper {
             pubSubBrokerWrapper,
             zkAddress,
             options.getVeniceZkBasePath(),
+            controllerUrls,
             featureProperties,
             options.getExtraProperties(),
             options.isForkServer(),
@@ -800,6 +805,7 @@ public class VeniceClusterWrapper extends ProcessWrapper {
         pubSubBrokerWrapper,
         zkServerWrapper.getAddress(),
         options.getVeniceZkBasePath(),
+        getAllControllersURLs(),
         featureProperties,
         new Properties(),
         clusterToServerD2.get(getClusterName()));
@@ -822,6 +828,7 @@ public class VeniceClusterWrapper extends ProcessWrapper {
         pubSubBrokerWrapper,
         zkServerWrapper.getAddress(),
         options.getVeniceZkBasePath(),
+        getAllControllersURLs(),
         new Properties(),
         properties,
         clusterToServerD2.get(getClusterName()));
@@ -841,6 +848,7 @@ public class VeniceClusterWrapper extends ProcessWrapper {
         pubSubBrokerWrapper,
         zkServerWrapper.getAddress(),
         options.getVeniceZkBasePath(),
+        getAllControllersURLs(),
         featureProperties,
         mergedProperties,
         options.isForkServer(),
